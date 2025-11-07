@@ -14,7 +14,7 @@ userId INT NOT NULL,
 status varchar(240) CHECK (status IN ('toDo', 'progress', 'review', 'done', 'cancel')) ,
 title varchar(255) NOT NULL,
 description nvarchar(max),
-priority varchar(10) CHECK (status IN('low', 'medium', 'high')),
+priority varchar(10),
 requirements nvarchar(max),
 acceptCrit nvarchar(max),
 agentId INT NOT NULL,
@@ -24,4 +24,5 @@ agentProcess varchar(max)
 FOREIGN KEY (userId) References Login(userId),
 FOREIGN KEY (agentId) References AgentFilter(agentId)
 )
+
 
