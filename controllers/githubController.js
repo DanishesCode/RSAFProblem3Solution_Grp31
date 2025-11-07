@@ -1,33 +1,37 @@
 const {
     githubExchangeCode,
-    githubGetUser
+    githubGetUser,
+    githubGetRepos
   } = require("../models/githubModel");
   
+  // Redirect user to GitHub login
   const githubRedirect = (req, res) => {
-    const redirectUrl = "https://github.com/login/oauth/authorize";
-  
+    const url = "https://github.com/login/oauth/authorize";
     const params = new URLSearchParams({
       client_id: process.env.GITHUB_CLIENT_ID,
-      scope: "read:user user:email"
+      scope: "read:user repo" // repo scope needed for private repos
     });
-  
-    res.redirect(`${redirectUrl}?${params.toString()}`);
+    res.redirect(`${url}?${params.toString()}`);
   };
   
+  // GitHub callback
   const githubCallback = async (req, res) => {
     try {
       const code = req.query.code;
-  
       const accessToken = await githubExchangeCode(code);
-      const user = await githubGetUser(accessToken);
   
-      console.log(user);
+      const user = await githubGetUser(accessToken); // GitHub user profile
+      const repos = await githubGetRepos(accessToken); // list of repo names
   
+      
       res.send(`
-        <h1>Logged in as ${user.login}</h1>
-        <img src="${user.avatar_url}" width="120"/>
+        <h1>Redirecting please wait..</h1>
+        <script>
+          localStorage.setItem("githubId", ${user.id});
+          localStorage.setItem("repos", ${JSON.stringify(repos)});
+          window.location.href = "../index.html";
+        </script>
       `);
-  
     } catch (err) {
       console.error(err);
       res.status(500).send("GitHub OAuth failed");
