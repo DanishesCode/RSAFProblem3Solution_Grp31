@@ -1,5 +1,6 @@
 create table Login (
-userId INT Identity(1,1) Primary Key
+userId INT Identity(1,1) Primary Key,
+githubId BIGINT NOT NULL UNIQUE
 )
 
 create table AgentFilter(
@@ -24,5 +25,4 @@ agentProcess varchar(max)
 FOREIGN KEY (userId) References Login(userId),
 FOREIGN KEY (agentId) References AgentFilter(agentId)
 )
-
 
