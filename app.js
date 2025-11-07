@@ -11,7 +11,7 @@ const githubController = require("./controllers/githubController");
 dotenv.config();
 
 // Import dbConfig AFTER loading environment variables
-const dbConfig = require("./dbconfig.js");
+const { dbConfig } = require('./dbConfig');
 
 
 // Create Express app

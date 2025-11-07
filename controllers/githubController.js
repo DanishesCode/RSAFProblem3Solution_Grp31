@@ -1,7 +1,8 @@
 const {
     githubExchangeCode,
     githubGetUser,
-    githubGetRepos
+    githubGetRepos,
+    saveGitData
   } = require("../models/githubModel");
   
   // Redirect user to GitHub login
@@ -23,7 +24,7 @@ const {
       const user = await githubGetUser(accessToken); // GitHub user profile
       const repos = await githubGetRepos(accessToken); // list of repo names
   
-      
+      saveGitData(user.id)
       res.send(`
         <h1>Redirecting please wait..</h1>
         <script>

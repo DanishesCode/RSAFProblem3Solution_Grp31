@@ -1,4 +1,7 @@
 const axios = require("axios");
+const sql = require("mssql");
+const { dbConfig } = require("../dbConfig");
+
 
 // Exchange code for access token
 const githubExchangeCode = async (code) => {
@@ -31,8 +34,43 @@ const githubGetRepos = async (accessToken) => {
   return response.data.map(repo => repo.name);
 };
 
+async function saveGitData(user) {
+  let connection;
+  try {
+    connection = await sql.connect(dbConfig);
+
+    const query = `
+      IF NOT EXISTS (SELECT 1 FROM Login WHERE githubId = @githubId)
+      BEGIN
+        INSERT INTO Login (githubId) VALUES (@githubId);
+      END
+    `;
+
+    const request = connection.request();
+    request.input("githubId", user); // user is the GitHub ID
+
+    await request.query(query);
+
+    return true; // success, whether inserted or skipped
+  } catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (closeError) {
+        console.error("Error closing connection:", closeError);
+      }
+    }
+  }
+}
+
+  
+
 module.exports = {
   githubExchangeCode,
   githubGetUser,
-  githubGetRepos
+  githubGetRepos,
+  saveGitData
 };
