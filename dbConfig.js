@@ -8,4 +8,7 @@ module.exports = {
       port: parseInt(process.env.DB_PORT), // Default SQL Server port
       connectionTimeout: 60000, // Connection timeout in milliseconds
     },
+    GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
+    GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
+    REDIRECT_URI: "http://localhost:3000/callback"
   };

@@ -4,6 +4,8 @@ const dotenv = require('dotenv');
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const passport = require("passport");
+const githubController = require("./controllers/githubController");
 
 // Load environment variables FIRST
 dotenv.config();
@@ -42,9 +44,23 @@ app.use('/middlewares', express.static(path.join(__dirname, 'middlewares')));
 app.use('/models', express.static(path.join(__dirname, 'models')));
 app.use('/controllers', express.static(path.join(__dirname, 'controllers')));
 
+//controller variables
 
 
 
+
+// Routes
+app.get("/login", (req, res) => res.sendFile(path.join(__dirname, "public/login/login.html")));
+app.get("/dashboard", (req, res) => {
+    if (!req.isAuthenticated()) return res.redirect("/login");
+    res.send(`<h1>Welcome, ${req.user.displayName || req.user.username}</h1>
+              <img src="${req.user.photo}" width="100"/><br>
+              <a href="/logout">Logout</a>`);
+});
+
+//github login Routes
+app.get("/github", githubController.githubRedirect);
+app.get("/github/callback", githubController.githubCallback);
 
 
 
