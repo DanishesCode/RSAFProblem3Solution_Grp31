@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/src/styles.css">
+    <title>AI Agent Kanban Dashboard</title>
+</head>
+<body>
+    <header>
+        <div class="brand" onclick="location.reload()">
+            <div class="logo">AI</div>
+            <div>Agentic</div>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" placeholder="Search tasks...">
+        </div>
+
+        <div class="top-buttons">
+            <button class="btn-activity">Activity</button>
+            <button class="btn-new">+ New Task</button>
+        </div>
+    </header>
+    <section class="agents">
+        <div class="agent">
+            <div class="agent-logo">S</div>
+            <div>
+                <div>Agent Name1</div>
+                <div class="agent-status working">Working - 45%</div>
+            </div>
+        </div>
+        <div class="agent">
+            <div class="agent-logo">P</div>
+            <div>
+                <div>Agent Name2</div>
+                <div class="agent-status offline">Offline - 0%</div>
+            </div>
+        </div>
+    </section>
+    <main>
+        <div class="column">
+            <div class="column-header">To Do</div>
+            <div class="task-list">
+                <div class="task">
+                    <div class="task-title">Research dataset sources</div>
+                    <div class="task-priority high">High Priority</div>
+                    <div class="progress">
+                        <div class="progress-fill" style="width: 20%"></div>
+                    </div>
+                    <div>Agent: Sage</div>
+                    <div>Repo: github.com/org/repo-alpha</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="column">
+            <div class="column-header">In Progress</div>
+            <div class="task-list">
+                <div class="task">
+                    <div class="task-title">Train evaluation model</div>
+                    <div class="task-priority high">High Priority</div>
+                    <div class="progress">
+                        <div class="progress-fill" style="width: 60%"></div>
+                    </div>
+                    <div>Agent: Scout</div>
+                    <div>Repo: github.com/org/repo-ml</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="column">
+            <div class="column-header">In Review</div>
+            <div class="task-list"></div>
+        </div>
+
+        <div class="column">
+            <div class="column-header">Done</div>
+            <div class="task-list"></div>
+        </div>
+
+        <div class="column">
+            <div class="column-header">Cancelled</div>
+            <div class="task-list"></div>
+        </div>
+        <script src="/src/script.js"></script>
+    </main>
+</body>
+</html>
