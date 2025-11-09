@@ -29,6 +29,8 @@ document.addEventListener("DOMContentLoaded", function() {
     const repos = reposString ? reposString.split(",") : [];
 
     const task = document.querySelector(".task");
+    const searchBar = document.querySelector(".search-bar");
+
 
     // Simulate agent workload every few seconds
     const agents = document.querySelectorAll('.agent-status.working');
@@ -51,6 +53,26 @@ tags.forEach(tag => {
         filterAgents();
     });
 });
+
+searchBar.querySelector("input").addEventListener("keyup", function(){
+    let query = this.value.toLowerCase();  
+    let items = document.querySelectorAll(".task");
+
+    for (let i = 0; i < items.length; i++) {
+        const itemText = items[i].getAttribute("title").toLowerCase();
+
+        if (itemText.includes(query)) {
+            items[i].style.display = 'block';
+        } else {
+            items[i].style.display = 'none';
+        }
+
+        if (items[i].getAttribute("title") === "Example Task Title") {
+            items[i].style.display = "none";
+        }
+    }
+});
+
 
 //notification module
 function notify(message, duration = 2500, type = "success") { //--example error: notify("Failed to update task!", 2500, "error"); success: notify("Task moved to in-progress");
