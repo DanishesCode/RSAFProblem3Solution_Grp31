@@ -26,7 +26,7 @@
         <div class="agent">
             <div class="agent-logo">S</div>
             <div>
-                <div>Agent Name1</div>
+                <div>Agent Name1</div>  
                 <div class="agent-status working">Working - 45%</div>
             </div>
         </div>
@@ -83,7 +83,106 @@
             <div class="column-header">Cancelled</div>
             <div class="task-list"></div>
         </div>
-        <script src="/src/script.js"></script>
+
+        <div id="addNewTaskPanel"><!-- Add new task panel -->
+            <div class="modal-overlay">
+              <div class="modal">
+          
+                <div class="modal-header">
+                  <h2>Create New Task</h2>
+                  <button class="close-btn">✕</button>
+                </div>
+          
+                <div class="modal-body">
+          
+                  <label>Task Title</label>
+                  <input type="text" placeholder="Enter task title..." />
+          
+                  <label>Description</label>
+                  <textarea placeholder="Describe the task in detail..."></textarea>
+          
+                  <div class="row">
+                    <div class="column">
+                      <label >Priority</label>
+                      <select>
+                        <option value = "medium">Medium</option>
+                        <option value = "low" >Low</option>
+                        <option value = "high">High</option>
+                      </select>
+                    </div>
+          
+                    <div class="column">
+                      <label >Estimated Time (hours)</label>
+                      <input type="number" value="0" />
+                    </div>
+                  </div>
+          
+                  <label>Required Capabilities</label>
+                  <div class="tags">
+                    <span value = "frontend">frontend</span>
+                    <span  value = "backend">backend</span>
+                    <span value = "ui-ux">ui-ux</span>
+                  </div>
+          
+                  <label>Requirements</label>
+                  <div class="add-row">
+                    <input type="text" placeholder="Add a requirement..." />
+                    <button class="add-btn">+</button>
+                  </div>
+          
+                  <label>Acceptance Criteria</label>
+                  <div class="add-row">
+                    <input type="text" placeholder="Add acceptance criteria..." />
+                    <button class="add-btn">+</button>
+                  </div>
+          
+                  <!-- ✅ GitHub Project Selector -->
+                  <label class="github-label">Select GitHub Project</label>
+          
+                  <div class="github-projects">
+                    <div class="repo-card">
+                      <strong value = "node-api-server">node-api-server</strong>
+                    </div>
+          
+                  </div>
+          
+                  <label class="assign-label">Assign Agent</label>
+          
+                  <div class="agent-card" value = "backend pro" filter = "backend">
+                    <div >
+                      <strong>Backend Pro</strong>
+                      <p>Workload: 0% • Performance: 88%</p>
+                    </div>
+                    <span class="badge">1/1 match</span>
+                  </div>
+          
+                  <div class="agent-card" value = "devops expert" filter = "ui-ux">
+                    <div>
+                      <strong>DevOps Expert</strong>
+                      <p>Workload: 0% • Performance: 95%</p>
+                    </div>
+                    <span class="badge">1/1 match</span>
+                  </div>
+          
+                  <div class="agent-card" value = "fullstack genius" filter = "backend,frontend,ui-ux">
+                    <div>
+                      <strong>FullStack Genius</strong>
+                      <p>Workload: 0% • Performance: 90%</p>
+                    </div>
+                    <span class="badge">1/1 match</span>
+                  </div>
+          
+          
+                <div class="modal-footer">
+                  <button class="cancel">Cancel</button>
+                  <button class="create">Create Task</button>
+                </div>
+          
+              </div>
+            </div>
+          </div>
+          
+        <script src="src/script.js"></script>
     </main>
 </body>
 </html>

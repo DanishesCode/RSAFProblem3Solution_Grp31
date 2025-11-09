@@ -170,3 +170,262 @@ main {
     height: 100%;
     background: #3a9fff;
 }
+
+/*addnewtask panel
+/* ===== Modal Overlay ===== */
+#addNewTaskPanel{
+    display: none;
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    padding: 20px;
+  }
+  
+  /* ===== Modal Container ===== */
+  .modal {
+    background: #fff;
+    width: 430px;
+    max-width: 100%;
+    max-height: 70vh; /* smaller popup height */
+    border-radius: 12px;
+    box-shadow: 0px 4px 25px rgba(0, 0, 0, 0.15);
+    animation: fadeIn 0.2s ease-in-out;
+    font-family: Arial, sans-serif;
+  
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* ensures clean scrolling */
+  }
+  
+  /* ===== Header ===== */
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e5e5;
+    flex-shrink: 0;
+  }
+  
+  .modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+  
+  .close-btn {
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  
+  /* ===== Scrollable Body ===== */
+  .modal-body {
+    padding: 20px;
+    overflow-y: auto; /* scrolling enabled */
+    flex: 1;
+  }
+  
+  /* ===== Inputs & Labels ===== */
+  label {
+    font-size: 13px;
+    font-weight: 600;
+    display: block;
+    margin: 10px 0 6px;
+  }
+  
+  input, textarea, select {
+    width: 100%;
+    border: 1px solid #dcdcdc;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 14px;
+  }
+  
+  textarea {
+    resize: vertical;
+    min-height: 60px;
+  }
+  
+  /* ===== Row Layout ===== */
+  .row {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .column {
+    flex: 1;
+  }
+  
+  /* ===== Tags ===== */
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  
+  .tags span {
+    padding: 4px 10px;
+    font-size: 13px;
+    background: #f1f1f1;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+  
+  .tags span.active {
+    background: #000;
+    color: white;
+  }
+  
+  /* ===== Add Requirement/Criteria Row ===== */
+  .add-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  
+  .add-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: black;
+    color: white;
+    font-size: 18px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  /* ===== GitHub Project Selector ===== */
+  .github-label {
+    margin-top: 15px;
+    font-weight: bold;
+    display: block;
+  }
+  
+  /* scrollable GitHub repo list */
+  .github-projects {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #e3e3e3;
+    border-radius: 8px;
+    padding: 8px;
+    margin-top: 6px;
+  }
+  
+  /* Repo card */
+  .repo-card {
+    display:none;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #e6e6e6;
+    margin-bottom: 8px;
+    cursor: pointer;
+    background: #fafafa;
+    transition: 0.15s ease;
+  }
+  
+  .repo-card:hover {
+    background: #f0f0f0;
+  }
+  
+  .repo-card.selected {
+    border-color: #000;
+    background: #eaeaea;
+  }
+  
+  .repo-card p {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #666;
+  }
+  
+  /* ===== Agents ===== */
+  .assign-label {
+    margin-top: 15px;
+    font-weight: bold;
+  }
+  
+  .agent-card {
+    padding: 10px;
+    border: 1px solid #e3e3e3;
+    border-radius: 8px;
+    margin: 8px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+  }
+  
+  .agent-card.selected {
+    border-color: #000;
+    background: #fafafa;
+  }
+  
+  .agent-card p {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #666;
+  }
+  
+  .badge {
+    font-size: 12px;
+    background: #ececec;
+    padding: 3px 8px;
+    border-radius: 8px;
+  }
+  
+  /* ===== Footer Buttons ===== */
+  .modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid #e5e5e5;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    background: #fff;
+    flex-shrink: 0;
+  }
+  
+  .cancel {
+    background: transparent;
+    border: 1px solid #ddd;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  
+  .create {
+    background: black;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .tags span.selected {
+    background-color: #4caf50;
+    color: white;
+    border-radius: 4px;
+    padding: 2px 6px;
+}
+
+.repo-card.selected {
+    border: 2px solid #4caf50;
+    border-radius: 6px;
+    background-color: #f0fff0;
+}
+
+  
+  /* ===== Animations ===== */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  
