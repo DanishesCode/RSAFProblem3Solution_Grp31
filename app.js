@@ -36,6 +36,7 @@ app.use(cookieParser());
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
+
 // Serve uploaded images at /uploads
 
 // Serve MVC files for browser-side loading
