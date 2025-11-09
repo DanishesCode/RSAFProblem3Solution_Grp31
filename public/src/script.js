@@ -52,6 +52,30 @@ tags.forEach(tag => {
     });
 });
 
+//notification module
+function notify(message, duration = 2500, type = "success") { //--example error: notify("Failed to update task!", 2500, "error"); success: notify("Task moved to in-progress");
+    const container = document.getElementById("notification-container");
+  
+    const notification = document.createElement("div");
+    notification.classList.add("notification", type);
+  
+    const icon = type === "error" ? "⚠" : "✔";
+  
+    notification.innerHTML = `
+      <div class="notification-icon">${icon}</div>
+      <div>${message}</div>
+    `;
+  
+    container.appendChild(notification);
+  
+    // Auto remove after duration
+    setTimeout(() => {
+      notification.style.animation = "slideOut 0.4s ease forwards";
+      setTimeout(() => notification.remove(), 400);
+    }, duration);
+  }
+  
+
 function filterAgents() {
     // get selected capabilities
     const selectedCapabilities = tags
@@ -74,7 +98,6 @@ function filterAgents() {
         card.style.display = match ? "block" : "none";
     });
 }
-
 
 // ---- Dynamic input rows ----
 function addInput(container) {
@@ -131,7 +154,7 @@ return {
     acceptanceCriteria,
     assignedAgent: selectedAgent ? selectedAgent.getAttribute("value") : null,
     repo: githubProject,
-    agentId: selectedAgent.getAttribute("agentId"),
+    agentId: selectedAgent ?  selectedAgent.getAttribute("agentid") : null,
     status:"toDo"
 };
 }
@@ -185,7 +208,7 @@ function validateForm() {
     if (!values.repo) missingFields.push("GitHub Project"); // new validation
 
     if (missingFields.length > 0) {
-        alert("Please complete the following fields:\n- " + missingFields.join("\n- "));
+        notify("Please complete the following fields:\n- " + missingFields.join("\n- "), 2500, "error")
         return false;
     }
 
@@ -294,6 +317,7 @@ createBtn.addEventListener("click", () => {
     console.log("Task Data:", taskData);
     addTask(taskData);
     closeModal();
+    notify("Created a new task");
 });
 
 // ---- Open modal ----
