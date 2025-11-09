@@ -235,7 +235,7 @@ function addTask(taskData){
     let description = taskData.description;
     let priority = taskData.priority;
     let requirements = taskData.requirements;
-    let acceptCrit = taskData.acceptCrit;
+    let acceptCrit = taskData.acceptanceCriteria;
     let agentId = taskData.agentId;
     let assignedAgent = taskData.assignedAgent
     let repo = taskData.repo;
@@ -246,6 +246,19 @@ function addTask(taskData){
     let cloneRepo = newTaskClone.querySelector(".repoSelected");
     let cloneSelectedAgent = newTaskClone.querySelector(".agentSelected")
     let selectedColumn;
+
+    newTaskClone.setAttribute("taskid", taskId);
+    newTaskClone.setAttribute("userid", userId);
+    newTaskClone.setAttribute("status", status);
+    newTaskClone.setAttribute("title", title);
+    newTaskClone.setAttribute("description", description);
+    newTaskClone.setAttribute("priority", priority);
+    newTaskClone.setAttribute("requirements", requirements[0]);
+    newTaskClone.setAttribute("acceptCrit", acceptCrit[0]);
+    newTaskClone.setAttribute("agentid", agentId);
+    newTaskClone.setAttribute("assignedAgent", assignedAgent);
+    newTaskClone.setAttribute("repo", repo);
+    newTaskClone.setAttribute("agentProcess", agentProcess);
 
     newTaskClone.style.display = "block";
     cloneTitle.textContent = title
