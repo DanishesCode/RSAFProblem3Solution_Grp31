@@ -39,47 +39,39 @@
         </div>
     </section>
     <main>
-        <div class="column">
+        <div class="column" type = "toDo">
             <div class="column-header">To Do</div>
             <div class="task-list">
-                <div class="task">
+                <div class="task" taskid="1" userid="123" status="toDo" title="Example Task Title" description="This is a detailed description." priority="high" requirements="Requirement 1; Requirement 2" acceptCrit="Acceptance criteria 1; Acceptance criteria 2" agentid="45" repo="node-api-server" agentProcess="Backend processing">
                     <div class="task-title">Research dataset sources</div>
-                    <div class="task-priority high">High Priority</div>
+                    <div class="task-priority">High Priority</div>
                     <div class="progress">
                         <div class="progress-fill" style="width: 20%"></div>
                     </div>
-                    <div>Agent: Sage</div>
-                    <div>Repo: github.com/org/repo-alpha</div>
+                    <div class = "agentSelected">Agent: Sage</div>
+                    <div class = "repoSelected">Repo: github.com/org/repo-alpha</div>
                 </div>
             </div>
         </div>
 
-        <div class="column">
+        <div class="column" type="progress">
             <div class="column-header">In Progress</div>
             <div class="task-list">
-                <div class="task">
-                    <div class="task-title">Train evaluation model</div>
-                    <div class="task-priority high">High Priority</div>
-                    <div class="progress">
-                        <div class="progress-fill" style="width: 60%"></div>
-                    </div>
-                    <div>Agent: Scout</div>
-                    <div>Repo: github.com/org/repo-ml</div>
-                </div>
+                
             </div>
         </div>
 
-        <div class="column">
+        <div class="column" type = "review">
             <div class="column-header">In Review</div>
             <div class="task-list"></div>
         </div>
 
-        <div class="column">
+        <div class="column" tyoe = "done">
             <div class="column-header">Done</div>
             <div class="task-list"></div>
         </div>
 
-        <div class="column">
+        <div class="column" type = "cancel">
             <div class="column-header">Cancelled</div>
             <div class="task-list"></div>
         </div>
@@ -148,7 +140,7 @@
           
                   <label class="assign-label">Assign Agent</label>
           
-                  <div class="agent-card" value = "backend pro" filter = "backend">
+                  <div class="agent-card" value = "backend pro" filter = "backend" agentId = "1">
                     <div >
                       <strong>Backend Pro</strong>
                       <p>Workload: 0% • Performance: 88%</p>
@@ -156,7 +148,7 @@
                     <span class="badge">1/1 match</span>
                   </div>
           
-                  <div class="agent-card" value = "devops expert" filter = "ui-ux">
+                  <div class="agent-card" value = "devops expert" filter = "ui-ux" agentId = "2">
                     <div>
                       <strong>DevOps Expert</strong>
                       <p>Workload: 0% • Performance: 95%</p>
@@ -164,7 +156,7 @@
                     <span class="badge">1/1 match</span>
                   </div>
           
-                  <div class="agent-card" value = "fullstack genius" filter = "backend,frontend,ui-ux">
+                  <div class="agent-card" value = "fullstack genius" filter = "backend,frontend,ui-ux" agentId = "3">
                     <div>
                       <strong>FullStack Genius</strong>
                       <p>Workload: 0% • Performance: 90%</p>

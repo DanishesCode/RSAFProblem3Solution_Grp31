@@ -17,20 +17,18 @@ document.addEventListener("DOMContentLoaded", function() {
     const descriptionInput = modal.querySelector("textarea");
     const prioritySelect = modal.querySelector("select");
     const estimatedTimeInput = modal.querySelector('input[type="number"]');
-
     const tags = Array.from(modal.querySelectorAll(".tags span"));
     const agentCards = Array.from(modal.querySelectorAll(".agent-card"));
-
-    // ---- Safe selectors for requirements and acceptance ----
     const addRows = modal.querySelectorAll(".modal-body .add-row");
     const requirementContainer = addRows[0];
     const acceptanceContainer = addRows[1];
-
     const requirementAddBtn = requirementContainer.querySelector(".add-btn");
     const acceptanceAddBtn = acceptanceContainer.querySelector(".add-btn");
     const githubProjectsContainer = modal.querySelector(".github-projects");
     const reposString = localStorage.getItem("repos"); // "repo1,repo2,..."
     const repos = reposString ? reposString.split(",") : [];
+
+    const task = document.querySelector(".task");
 
     // Simulate agent workload every few seconds
     const agents = document.querySelectorAll('.agent-status.working');
@@ -132,7 +130,9 @@ return {
     requirements,
     acceptanceCriteria,
     assignedAgent: selectedAgent ? selectedAgent.getAttribute("value") : null,
-    githubProject: githubProject
+    repo: githubProject,
+    agentId: selectedAgent.getAttribute("agentId"),
+    status:"toDo"
 };
 }
 // ---- Highlight selected capabilities ----
@@ -182,7 +182,7 @@ function validateForm() {
     if (values.requirements.length === 0) missingFields.push("Requirements");
     if (values.acceptanceCriteria.length === 0) missingFields.push("Acceptance Criteria");
     if (!values.assignedAgent) missingFields.push("Assigned Agent");
-    if (!values.githubProject) missingFields.push("GitHub Project"); // new validation
+    if (!values.repo) missingFields.push("GitHub Project"); // new validation
 
     if (missingFields.length > 0) {
         alert("Please complete the following fields:\n- " + missingFields.join("\n- "));
@@ -226,6 +226,44 @@ function resetModal() {
     // Reset agent filtering (show all agents)
     agentCards.forEach(card => card.style.display = "block");
 }
+function addTask(taskData){
+    let newTaskClone = task.cloneNode(true);
+    let taskId = taskData.taskId;
+    let userId = taskData.userId;
+    let status = taskData.status;
+    let title = taskData.title;
+    let description = taskData.description;
+    let priority = taskData.priority;
+    let requirements = taskData.requirements;
+    let acceptCrit = taskData.acceptCrit;
+    let agentId = taskData.agentId;
+    let assignedAgent = taskData.assignedAgent
+    let repo = taskData.repo;
+    let agentProcess = taskData.agentProcess;
+
+    let cloneTitle = newTaskClone.querySelector(".task-title");
+    let clonePriority = newTaskClone.querySelector(".task-priority ")
+    let cloneRepo = newTaskClone.querySelector(".repoSelected");
+    let cloneSelectedAgent = newTaskClone.querySelector(".agentSelected")
+    let selectedColumn;
+
+    newTaskClone.style.display = "block";
+    cloneTitle.textContent = title
+    clonePriority.textContent = priority;
+    cloneRepo.textContent = "Repo: "+repo;
+    cloneSelectedAgent.textContent = "Agent: "+assignedAgent;
+
+    let cols = document.querySelectorAll(".column")
+    for (let i = 0; i <cols.length;i++){
+        if (cols[i].getAttribute("type") == status){
+            selectedColumn = cols[i]
+            break;
+        }
+    }
+
+    selectedColumn.querySelector(".task-list").appendChild(newTaskClone);
+
+}
 
 
 // ---- Modal controls ----
@@ -241,6 +279,7 @@ createBtn.addEventListener("click", () => {
     if (!validateForm()) return;
     const taskData = collectValues();
     console.log("Task Data:", taskData);
+    addTask(taskData);
     closeModal();
 });
 
