@@ -25,4 +25,11 @@ agentProcess varchar(max)
 FOREIGN KEY (userId) References Login(userId),
 FOREIGN KEY (agentId) References AgentFilter(agentId)
 )
+  
+SET Identity_Insert AgentFilter ON
+insert into AgentFilter (agentId,agentName, agentSpecial)
+
+Values( '1', 'Claude','backend'), ('2', 'Gemini','frontend'), ('3', 'OpenAi', 'ui-ux');
+
+
 
