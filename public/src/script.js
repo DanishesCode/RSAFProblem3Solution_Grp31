@@ -114,8 +114,7 @@ function addInput(container) {
     newAddBtn.addEventListener("click", () => addInput(container));
 }
 
-requirementAddBtn.addEventListener("click", () => addInput(requirementContainer));
-acceptanceAddBtn.addEventListener("click", () => addInput(acceptanceContainer));
+
 
 // ---- Agent selection ----
 agentCards.forEach(card => {
@@ -148,8 +147,6 @@ return {
     title: titleInput.value.trim(),
     description: descriptionInput.value.trim(),
     priority: prioritySelect.value,
-    estimatedTime: Number(estimatedTimeInput.value),
-    requiredCapabilities: selectedCapabilities,
     requirements,
     acceptanceCriteria,
     assignedAgent: selectedAgent ? selectedAgent.getAttribute("value") : null,
@@ -201,7 +198,6 @@ function validateForm() {
     if (!values.title) missingFields.push("Task Title");
     if (!values.description) missingFields.push("Description");
     if (!values.priority) missingFields.push("Priority");
-    if (values.requiredCapabilities.length === 0) missingFields.push("Required Capabilities");
     if (values.requirements.length === 0) missingFields.push("Requirements");
     if (values.acceptanceCriteria.length === 0) missingFields.push("Acceptance Criteria");
     if (!values.assignedAgent) missingFields.push("Assigned Agent");
@@ -219,7 +215,6 @@ function resetModal() {
     // Reset text inputs and textarea
     titleInput.value = "";
     descriptionInput.value = "";
-    estimatedTimeInput.value = 0;
     prioritySelect.value = "medium"; // default value
 
     // Reset required capabilities
