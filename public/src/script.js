@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const reposString = localStorage.getItem("repos"); // "repo1,repo2,..."
     const repos = reposString ? reposString.split(",") : [];
 
+    const apiBaseUrl = "http://localhost:3000";
     const task = document.querySelector(".task");
 
     // Simulate agent workload every few seconds
@@ -210,6 +211,43 @@ function validateForm() {
 
     return true;
 }
+async function saveBacklog(formData) {
+    try {
+      const response = await fetch(`${apiBaseUrl}/backlog/save`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(formData)
+      });
+  
+      if (!response.ok) {
+        // Handle HTTP errors
+        const errorBody = response.headers
+          .get("content-type")
+          ?.includes("application/json")
+          ? await response.json()
+          : { message: response.statusText };
+  
+        throw new Error(
+          `HTTP error! status: ${response.status}, message: ${errorBody.message}`
+        );
+      }
+  
+      const saved = await response.json();
+  
+      if (!saved) {
+        console.log("Backlog not saved");
+        return null;
+      }
+  
+      console.log("Saved backlog:", saved);
+      return saved;
+    } catch (error) {
+      console.error("Error saving backlog", error);
+    }
+  }
+  
 
 function resetModal() {
     // Reset text inputs and textarea
@@ -246,8 +284,9 @@ function resetModal() {
 }
 function addTask(taskData){
     let newTaskClone = task.cloneNode(true);
-    let taskId = localStorage.getItem("userId");
+    let taskId = taskData.taskid;
     let status = taskData.status;
+    let userId = localStorage.getItem("userId");
     let title = taskData.title;
     let description = taskData.description;
     let priority = taskData.priority;
@@ -270,8 +309,8 @@ function addTask(taskData){
     newTaskClone.setAttribute("title", title);
     newTaskClone.setAttribute("description", description);
     newTaskClone.setAttribute("priority", priority);
-    newTaskClone.setAttribute("requirements", requirements[0]);
-    newTaskClone.setAttribute("acceptCrit", acceptCrit[0]);
+    newTaskClone.setAttribute("requirements", requirements);
+    newTaskClone.setAttribute("acceptCrit", acceptCrit);
     newTaskClone.setAttribute("agentid", agentId);
     newTaskClone.setAttribute("assignedAgent", assignedAgent);
     newTaskClone.setAttribute("repo", repo);
@@ -305,11 +344,13 @@ closeBtn.addEventListener("click", closeModal);
 cancelBtn.addEventListener("click", closeModal);
 
 // ---- Create task ----
-createBtn.addEventListener("click", () => {
+createBtn.addEventListener("click", async () => {
     if (!validateForm()) return;
     const taskData = collectValues();
-    console.log("Task Data:", taskData);
-    addTask(taskData);
+    taskData["userId"] = localStorage.getItem("userId");
+    let savedData = await saveBacklog(taskData);
+    console.log("Task Data:", savedData);
+    addTask(savedData);
     closeModal();
     notify("Created a new task");
 });

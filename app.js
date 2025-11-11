@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const passport = require("passport");
 const githubController = require("./controllers/githubController");
+const taskController = require("./controllers/taskController");
 
 // Load environment variables FIRST
 dotenv.config();
@@ -62,7 +63,8 @@ app.get("/dashboard", (req, res) => {
 app.get("/github", githubController.githubRedirect);
 app.get("/github/callback", githubController.githubCallback);
 
-
+//save tasks
+app.post("/backlog/save",taskController.createBacklog)
 
 
 // Start server
