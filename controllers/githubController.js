@@ -24,11 +24,12 @@ const {
       const user = await githubGetUser(accessToken); // GitHub user profile
       const repos = await githubGetRepos(accessToken); // list of repo names
   
-      saveGitData(user.id)
+      let data = await saveGitData(user.id)
       res.send(`
         <h1>Redirecting please wait..</h1>
         <script>
           localStorage.setItem("githubId", ${user.id});
+          localStorage.setItem("userId", ${data.userId});
           localStorage.setItem("repos", ${JSON.stringify(repos)});
           window.location.href = "../index.html";
         </script>

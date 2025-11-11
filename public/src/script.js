@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const reposString = localStorage.getItem("repos"); // "repo1,repo2,..."
     const repos = reposString ? reposString.split(",") : [];
 
+    const apiBaseUrl = "http://localhost:3000";
     const task = document.querySelector(".task");
     const searchBar = document.querySelector(".search-bar");
 
@@ -136,8 +137,7 @@ function addInput(container) {
     newAddBtn.addEventListener("click", () => addInput(container));
 }
 
-requirementAddBtn.addEventListener("click", () => addInput(requirementContainer));
-acceptanceAddBtn.addEventListener("click", () => addInput(acceptanceContainer));
+
 
 // ---- Agent selection ----
 agentCards.forEach(card => {
@@ -170,8 +170,6 @@ return {
     title: titleInput.value.trim(),
     description: descriptionInput.value.trim(),
     priority: prioritySelect.value,
-    estimatedTime: Number(estimatedTimeInput.value),
-    requiredCapabilities: selectedCapabilities,
     requirements,
     acceptanceCriteria,
     assignedAgent: selectedAgent ? selectedAgent.getAttribute("value") : null,
@@ -223,7 +221,6 @@ function validateForm() {
     if (!values.title) missingFields.push("Task Title");
     if (!values.description) missingFields.push("Description");
     if (!values.priority) missingFields.push("Priority");
-    if (values.requiredCapabilities.length === 0) missingFields.push("Required Capabilities");
     if (values.requirements.length === 0) missingFields.push("Requirements");
     if (values.acceptanceCriteria.length === 0) missingFields.push("Acceptance Criteria");
     if (!values.assignedAgent) missingFields.push("Assigned Agent");
@@ -236,12 +233,48 @@ function validateForm() {
 
     return true;
 }
+async function saveBacklog(formData) {
+    try {
+      const response = await fetch(`${apiBaseUrl}/backlog/save`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(formData)
+      });
+  
+      if (!response.ok) {
+        // Handle HTTP errors
+        const errorBody = response.headers
+          .get("content-type")
+          ?.includes("application/json")
+          ? await response.json()
+          : { message: response.statusText };
+  
+        throw new Error(
+          `HTTP error! status: ${response.status}, message: ${errorBody.message}`
+        );
+      }
+  
+      const saved = await response.json();
+  
+      if (!saved) {
+        console.log("Backlog not saved");
+        return null;
+      }
+  
+      console.log("Saved backlog:", saved);
+      return saved;
+    } catch (error) {
+      console.error("Error saving backlog", error);
+    }
+  }
+  
 
 function resetModal() {
     // Reset text inputs and textarea
     titleInput.value = "";
     descriptionInput.value = "";
-    estimatedTimeInput.value = 0;
     prioritySelect.value = "medium"; // default value
 
     // Reset required capabilities
@@ -273,9 +306,9 @@ function resetModal() {
 }
 function addTask(taskData){
     let newTaskClone = task.cloneNode(true);
-    let taskId = taskData.taskId;
-    let userId = taskData.userId;
+    let taskId = taskData.taskid;
     let status = taskData.status;
+    let userId = localStorage.getItem("userId");
     let title = taskData.title;
     let description = taskData.description;
     let priority = taskData.priority;
@@ -298,8 +331,8 @@ function addTask(taskData){
     newTaskClone.setAttribute("title", title);
     newTaskClone.setAttribute("description", description);
     newTaskClone.setAttribute("priority", priority);
-    newTaskClone.setAttribute("requirements", requirements[0]);
-    newTaskClone.setAttribute("acceptCrit", acceptCrit[0]);
+    newTaskClone.setAttribute("requirements", requirements);
+    newTaskClone.setAttribute("acceptCrit", acceptCrit);
     newTaskClone.setAttribute("agentid", agentId);
     newTaskClone.setAttribute("assignedAgent", assignedAgent);
     newTaskClone.setAttribute("repo", repo);
@@ -333,11 +366,13 @@ closeBtn.addEventListener("click", closeModal);
 cancelBtn.addEventListener("click", closeModal);
 
 // ---- Create task ----
-createBtn.addEventListener("click", () => {
+createBtn.addEventListener("click", async () => {
     if (!validateForm()) return;
     const taskData = collectValues();
-    console.log("Task Data:", taskData);
-    addTask(taskData);
+    taskData["userId"] = localStorage.getItem("userId");
+    let savedData = await saveBacklog(taskData);
+    console.log("Task Data:", savedData);
+    addTask(savedData);
     closeModal();
     notify("Created a new task");
 });
