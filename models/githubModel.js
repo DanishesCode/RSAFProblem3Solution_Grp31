@@ -34,7 +34,7 @@ const githubGetRepos = async (accessToken) => {
   return response.data.map(repo => repo.name);
 };
 
-async function saveGitData(user) {
+async function saveGitData(githubId) {
   let connection;
   try {
     connection = await sql.connect(dbConfig);
@@ -42,16 +42,22 @@ async function saveGitData(user) {
     const query = `
       IF NOT EXISTS (SELECT 1 FROM Login WHERE githubId = @githubId)
       BEGIN
-        INSERT INTO Login (githubId) VALUES (@githubId);
-      END
+        INSERT INTO Login (githubId)
+        VALUES (@githubId);
+      END;
+
+      SELECT *
+      FROM Login
+      WHERE githubId = @githubId;
     `;
 
     const request = connection.request();
-    request.input("githubId", user); // user is the GitHub ID
+    request.input("githubId", githubId);
 
-    await request.query(query);
+    const result = await request.query(query);
 
-    return true; // success, whether inserted or skipped
+    // The SELECT result is always in result.recordsets[1] or result.recordset
+    return result.recordset[0]; // return the row
   } catch (error) {
     console.error("Database error:", error);
     throw error;
@@ -65,6 +71,7 @@ async function saveGitData(user) {
     }
   }
 }
+
 
   
 

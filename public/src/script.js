@@ -246,8 +246,7 @@ function resetModal() {
 }
 function addTask(taskData){
     let newTaskClone = task.cloneNode(true);
-    let taskId = taskData.taskId;
-    let userId = taskData.userId;
+    let taskId = localStorage.getItem("userId");
     let status = taskData.status;
     let title = taskData.title;
     let description = taskData.description;
