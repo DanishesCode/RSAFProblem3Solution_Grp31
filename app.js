@@ -8,6 +8,7 @@ const passport = require("passport");
 const githubController = require("./controllers/githubController");
 const taskController = require("./controllers/taskController");
 
+
 // Load environment variables FIRST
 dotenv.config();
 
@@ -59,13 +60,18 @@ app.get("/dashboard", (req, res) => {
               <a href="/logout">Logout</a>`);
 });
 
+//Get functions
 //github login Routes
 app.get("/github", githubController.githubRedirect);
 app.get("/github/callback", githubController.githubCallback);
 
+//Post functions
 //save tasks
 app.post("/backlog/save",taskController.createBacklog)
 
+//Put Functions
+//Update task Status
+app.put("/backlog/status-update", taskController.updateStatus); 
 
 // Start server
 app.listen(port, async () => {
