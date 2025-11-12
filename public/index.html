@@ -43,7 +43,7 @@
         <div class="column" type = "toDo">
             <div class="column-header">To Do</div>
             <div class="task-list">
-                <div class="task" taskid="1" userid="123" status="toDo" title="Example Task Title" description="This is a detailed description." priority="high" requirements="Requirement 1; Requirement 2" acceptCrit="Acceptance criteria 1; Acceptance criteria 2" agentid="45" repo="node-api-server" agentProcess="Backend processing">
+                <div class="task" draggable="true" ondragstart="drag(event)" taskid="1" userid="123" status="toDo" title="Example Task Title" description="This is a detailed description." priority="high" requirements="Requirement 1; Requirement 2" acceptCrit="Acceptance criteria 1; Acceptance criteria 2" agentid="45" repo="node-api-server" agentProcess="Backend processing">
                     <div class="task-title">Research dataset sources</div>
                     <div class="task-priority">High Priority</div>
                     <div class="progress">
@@ -55,24 +55,24 @@
             </div>
         </div>
 
-        <div class="column" type="progress">
+        <div class="column" type="progress" ondragover="allowDrop(event)" ondrop="drop(event)">
             <div class="column-header">In Progress</div>
             <div class="task-list">
                 
             </div>
         </div>
 
-        <div class="column" type = "review">
+        <div class="column" type = "review" ondragover="allowDrop(event)" ondrop="drop(event)">
             <div class="column-header">In Review</div>
             <div class="task-list"></div>
         </div>
 
-        <div class="column" tyoe = "done">
+        <div class="column" tyoe = "done" ondragover="allowDrop(event)" ondrop="drop(event)">
             <div class="column-header">Done</div>
             <div class="task-list"></div>
         </div>
 
-        <div class="column" type = "cancel">
+        <div class="column" type = "cancel" ondragover="allowDrop(event)" ondrop="drop(event)">
             <div class="column-header">Cancelled</div>
             <div class="task-list"></div>
         </div>
@@ -172,6 +172,7 @@
           </div>
           
         <script src="src/script.js"></script>
+        <script src="src/dragAndDrop.js"></script>
     </main>
 </body>
 </html>
