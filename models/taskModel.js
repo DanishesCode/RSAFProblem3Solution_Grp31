@@ -64,7 +64,45 @@ async function createBacklogItem(data) {
     }
   }
 
-module.exports = {
-    createBacklogItem
+async function updateBacklogItemStatus(taskId, status) {
+    let connection;
+    try {
+        connection = await sql.connect(dbConfig);
+        
+        const query = `
+            UPDATE Backlog
+            SET status = @status
+            WHERE taskId = @taskId;
+
+            SELECT * FROM Backlog WHERE taskId = @taskId;
+        `;
+        
+        const request = connection.request();
+        
+        request.input("status", status);
+        // The taskId field in your database is an INT, so ensure the input is treated as such.
+        request.input("taskId", sql.Int, parseInt(taskId)); 
+        
+        const result = await request.query(query);
+        
+        return result.recordset[0]; // Return the updated task row
+    } catch (error) {
+        console.error("Database error updating status:", error);
+        throw error;
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (closeError) {
+                console.error("Error closing connection:", closeError);
+            }
+        }
+    }
 }
+
+module.exports = {
+    createBacklogItem,
+    updateBacklogItemStatus // Export the new function
+};
+
     
