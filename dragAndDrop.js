@@ -1,83 +1,78 @@
-// Function called when a draggable element starts being dragged
+// --- Drag and Drop Logic Functions ---
+
 function drag(ev) {
-    // Set the task's ID as the data to be transferred
-    // 'text/plain' is a standard type for text data
-    ev.dataTransfer.setData("text/plain", ev.target.getAttribute('taskid'));
+    // Store task ID being dragged
+    ev.dataTransfer.setData("text/plain", ev.target.getAttribute("taskid"));
+
+    // Add dragging class (for visual feedback)
+    setTimeout(() => ev.target.classList.add("dragging"), 0);
 }
 
-// Function called when a draggable element is dragged over a drop zone
 function allowDrop(ev) {
-    // Prevent the default handling (which is to not allow a drop)
+    // Must prevent default to allow dropping
     ev.preventDefault();
 }
 
-// Function called when a draggable element is dropped on a drop zone
+function dragEnter(ev) {
+    const dropColumn = ev.target.closest(".column");
+    if (dropColumn) {
+        dropColumn.classList.add("drag-over");
+    }
+}
+
+function dragLeave(ev) {
+    const dropColumn = ev.target.closest(".column");
+    if (dropColumn) {
+        dropColumn.classList.remove("drag-over");
+    }
+}
+
 function drop(ev) {
     ev.preventDefault();
-    
-    // 1. Get the data (the task ID) from the drag event
+
     const taskId = ev.dataTransfer.getData("text/plain");
     const draggedTask = document.querySelector(`.task[taskid="${taskId}"]`);
-    
-    // 2. Determine the drop target (the column's task-list)
-    let dropTarget = ev.target;
-    
-    // Traverse up until we find the 'task-list' or 'column'
-    while (dropTarget && !dropTarget.classList.contains('task-list') && !dropTarget.classList.contains('column')) {
-        dropTarget = dropTarget.parentElement;
-    }
 
-    // Ensure we have a valid target column element
-    if (draggedTask && dropTarget) {
-        let taskList;
-        let newStatus;
-        
-        if (dropTarget.classList.contains('column')) {
-            // If dropped on the column itself, drop it into the .task-list inside
-            taskList = dropTarget.querySelector('.task-list');
-            newStatus = dropTarget.getAttribute('type');
-        } else if (dropTarget.classList.contains('task-list')) {
-            // If dropped directly on the task-list
-            taskList = dropTarget;
-            newStatus = dropTarget.closest('.column').getAttribute('type');
-        }
-        
-        if (taskList) {
-            // 3. Move the task element to the new column
-            taskList.appendChild(draggedTask);
-            
-            // 4. Update the task's status attribute (important for persistence later)
-            draggedTask.setAttribute('status', newStatus);
-            
-            // 5. You would typically call an API here to persist the status change
-            // updateTaskStatus(taskId, newStatus); 
-            console.log(`Task ${taskId} moved to status: ${newStatus}`);
-        }
+    if (!draggedTask) return;
+
+    draggedTask.classList.remove("dragging");
+
+    const dropColumn = ev.target.closest(".column");
+    if (!dropColumn) return;
+
+    dropColumn.classList.remove("drag-over");
+
+    // ✅ Ensure we append into the correct `.task-list`
+    const taskList = dropColumn.querySelector(".task-list");
+    if (taskList) {
+        taskList.appendChild(draggedTask);
+        const newStatus = dropColumn.getAttribute("type");
+        draggedTask.setAttribute("status", newStatus);
+        console.log(`✅ Task ${taskId} moved to ${newStatus}`);
+    } else {
+        console.error("⚠️ No .task-list found inside column!");
     }
 }
 
-// You can add a function to update the status via the backend API here.
-/*
-async function updateTaskStatus(taskId, newStatus) {
-    // This part is for future development to integrate with your taskController
-    // You'd need a PUT/PATCH endpoint on your server for status updates.
-    
-    try {
-        const response = await fetch('/backlog/status-update', {
-            method: 'PUT', // Or PATCH
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ taskId, status: newStatus })
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to update task status on server');
-        }
-        const data = await response.json();
-        console.log('Status updated successfully:', data);
-        
-    } catch (error) {
-        console.error('Error updating status:', error);
-        // Optional: Visually revert the task's position if API call fails
-    }
+// --- Helper: Attach listeners to all tasks ---
+function attachDragListeners() {
+    document.querySelectorAll('.task[draggable="true"]').forEach(task => {
+        task.removeEventListener("dragstart", drag);
+        task.addEventListener("dragstart", drag);
+    });
 }
-*/
+
+// --- Initialization ---
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("dragAndDrop.js is running and attaching listeners (Final Version).");
+
+    attachDragListeners();
+
+    // ✅ Attach handlers to all columns and their .task-list children
+    document.querySelectorAll(".column, .task-list").forEach(dropZone => {
+        dropZone.addEventListener("dragover", allowDrop);
+        dropZone.addEventListener("drop", drop);
+        dropZone.addEventListener("dragenter", dragEnter);
+        dropZone.addEventListener("dragleave", dragLeave);
+    });
+});
