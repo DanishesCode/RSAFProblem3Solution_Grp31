@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/src/styles.css">
+    <title>AI Agent Kanban Dashboard</title>
+</head>
+<body>
+    <header>
+        <div class="brand" onclick="location.reload()">
+            <div class="logo">AI</div>
+            <div>Agentic</div>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" placeholder="Search tasks...">
+        </div>
+
+        <div class="top-buttons">
+            <button class="btn-activity">Activity</button>
+            <button class="btn-new">+ New Task</button>
+        </div>
+    </header>
+    <section class="agents">
+        <div class="agent">
+            <div class="agent-logo">S</div>
+            <div>
+                <div>Agent Name1</div>
+                <div class="agent-status working">Working - 45%</div>
+            </div>
+        </div>
+        <div class="agent">
+            <div class="agent-logo">P</div>
+            <div>
+                <div>Agent Name2</div>
+                <div class="agent-status offline">Offline - 0%</div>
+            </div>
+        </div>
+    </section>
+    <main>
+        <div class="column">
+            <div class="column-header">To Do</div>
+            <div class="task-list">
+                <div class="task">
+                    <div class="task-title">Research dataset sources</div>
+                    <div class="task-priority high">High Priority</div>
+                    <div class="progress">
+                        <div class="progress-fill" style="width: 20%"></div>
+                    </div>
+                    <div>Agent: Sage</div>
+                    <div>Repo: github.com/org/repo-alpha</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="column">
+            <div class="column-header">In Progress</div>
+            <div class="task-list">
+                <div class="task">
+                    <div class="task-title">Train evaluation model</div>
+                    <div class="task-priority high">High Priority</div>
+                    <div class="progress">
+                        <div class="progress-fill" style="width: 60%"></div>
+                    </div>
+                    <div>Agent: Scout</div>
+                    <div>Repo: github.com/org/repo-ml</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="column">
+            <div class="column-header">In Review</div>
+            <div class="task-list">
+                <div class="task review-task" onclick="openReviewModal(this)">
+                    <div class="task-title">Implement user authentication</div>
+                    <div class="task-priority medium">Medium Priority</div>
+                    <div class="progress">
+                        <div class="progress-fill" style="width: 100%"></div>
+                    </div>
+                    <div class="ai-progress">AI Progress: Login system completed, testing needed</div>
+                    <div>Agent: CodeBot</div>
+                    <div>Repo: github.com/org/auth-module</div>
+                    <div class="task-data" style="display: none;">
+                        <span class="prompt">Make me thing please build user auth pies</span>
+                        <span class="repo-name">auth-module</span>
+                        <span class="code-changes">Shows github and changed code in the github</span>
+                        <span class="progress-percent">100</span>
+                        <span class="agent-name">Claude AI</span>
+                        <span class="workload">61</span>
+                        <span class="performance">40</span>
+                    </div>
+                </div>
+                <div class="task review-task" onclick="openReviewModal(this)">
+                    <div class="task-title">Optimize database queries</div>
+                    <div class="task-priority high">High Priority</div>
+                    <div class="progress">
+                        <div class="progress-fill" style="width: 100%"></div>
+                    </div>
+                    <div class="ai-progress">AI Progress: All queries optimized, performance improved by 40%</div>
+                    <div>Agent: QueryMaster</div>
+                    <div>Repo: github.com/org/db-optimization</div>
+                    <div class="task-data" style="display: none;">
+                        <span class="prompt">Optimize all database queries for better performance</span>
+                        <span class="repo-name">db-optimization</span>
+                        <span class="code-changes">Modified 3 query files with index optimizations</span>
+                        <span class="progress-percent">100</span>
+                        <span class="agent-name">QueryMaster AI</span>
+                        <span class="workload">45</span>
+                        <span class="performance">85</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="column">
+            <div class="column-header">Done</div>
+            <div class="task-list"></div>
+        </div>
+
+        <div class="column">
+            <div class="column-header">Cancelled</div>
+            <div class="task-list"></div>
+        </div>
+        <script src="/src/script.js"></script>
+    </main>
+
+    <!-- Review Modal -->
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close">&times;</span>
+                <h3 id="modalTaskTitle">Build User Authentication</h3>
+                <div class="priority-badge" id="modalPriority">Medium</div>
+            </div>
+            
+            <div class="modal-body">
+                <div class="section">
+                    <label>Prompt used:</label>
+                    <div class="prompt-box" id="modalPrompt">
+                        Make me thing please build user auth pies
+                    </div>
+                </div>
+
+                <div class="section">
+                    <label>Appended Code</label>
+                    <button class="repo-link" id="modalRepoLink">
+                        📁 In X Repository
+                        <span class="expand-icon">⤢</span>
+                    </button>
+                    <div class="code-info" id="modalCodeInfo">
+                        Shows github and changed code in the github
+                    </div>
+                </div>
+
+                <div class="section">
+                    <label>Progress: <span id="modalProgress">100%</span></label>
+                    <div class="progress-bar">
+                        <div class="progress-fill-modal" id="modalProgressBar"></div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <label>Assigned AI Agent</label>
+                    <div class="agent-info">
+                        <div class="agent-icon">🤖</div>
+                        <div class="agent-details">
+                            <div class="agent-name" id="modalAgentName">Claude AI</div>
+                            <div class="agent-status-modal">
+                                Workload: <span id="modalWorkload">61%</span> Performance: <span id="modalPerformance">40%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-reject" onclick="handleModalDecision('cancel')">Reject</button>
+                <button class="btn-try-again" onclick="handleModalDecision('retry')">Try Again</button>
+                <button class="btn-accept-modal" onclick="handleModalDecision('accept')">Accept</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
