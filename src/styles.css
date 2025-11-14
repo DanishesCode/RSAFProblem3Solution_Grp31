@@ -185,6 +185,37 @@ main {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Drag and Drop Styling */
+.task {
+    transition: all 0.2s ease;
+}
+
+.task.dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+    z-index: 1000;
+}
+
+.task-list {
+    min-height: 50px;
+    transition: background-color 0.2s ease;
+}
+
+.task-list.drag-over {
+    background-color: #e8f4fd;
+    border: 2px dashed #007bff;
+    border-radius: 8px;
+}
+
+.column {
+    transition: all 0.2s ease;
+}
+
+.column.drag-highlight {
+    background-color: #f8f9fa;
+    transform: scale(1.02);
+}
+
 .ai-progress {
     font-size: 11px;
     color: #666;
@@ -328,6 +359,28 @@ main {
     font-family: var(--font);
     color: #666;
     font-size: 13px;
+}
+
+.description-box {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    font-family: var(--font);
+    color: #666;
+    font-size: 13px;
+    min-height: 40px;
+}
+
+.acceptance-box {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    font-family: var(--font);
+    color: #666;
+    font-size: 13px;
+    min-height: 40px;
 }
 
 .repo-link {

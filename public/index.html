@@ -41,8 +41,8 @@
     <main>
         <div class="column">
             <div class="column-header">To Do</div>
-            <div class="task-list">
-                <div class="task">
+            <div class="task-list" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
+                <div class="task" draggable="true" ondragstart="handleDragStart(event)">
                     <div class="task-title">Research dataset sources</div>
                     <div class="task-priority high">High Priority</div>
                     <div class="progress">
@@ -56,8 +56,8 @@
 
         <div class="column">
             <div class="column-header">In Progress</div>
-            <div class="task-list">
-                <div class="task">
+            <div class="task-list" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
+                <div class="task" draggable="true" ondragstart="handleDragStart(event)">
                     <div class="task-title">Train evaluation model</div>
                     <div class="task-priority high">High Priority</div>
                     <div class="progress">
@@ -71,8 +71,8 @@
 
         <div class="column">
             <div class="column-header">In Review</div>
-            <div class="task-list">
-                <div class="task review-task" onclick="openReviewModal(this)">
+            <div class="task-list" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
+                <div class="task review-task" draggable="true" onclick="openReviewModal(this)" ondragstart="handleDragStart(event)">
                     <div class="task-title">Implement user authentication</div>
                     <div class="task-priority medium">Medium Priority</div>
                     <div class="progress">
@@ -83,6 +83,8 @@
                     <div>Repo: github.com/org/auth-module</div>
                     <div class="task-data" style="display: none;">
                         <span class="prompt">Make me thing please build user auth pies</span>
+                        <span class="description">Implement secure user authentication system with login, registration, and session management features.</span>
+                        <span class="acceptance"></span>
                         <span class="repo-name">auth-module</span>
                         <span class="code-changes">Shows github and changed code in the github</span>
                         <span class="progress-percent">100</span>
@@ -91,7 +93,7 @@
                         <span class="performance">40</span>
                     </div>
                 </div>
-                <div class="task review-task" onclick="openReviewModal(this)">
+                <div class="task review-task" draggable="true" onclick="openReviewModal(this)" ondragstart="handleDragStart(event)">
                     <div class="task-title">Optimize database queries</div>
                     <div class="task-priority high">High Priority</div>
                     <div class="progress">
@@ -102,6 +104,8 @@
                     <div>Repo: github.com/org/db-optimization</div>
                     <div class="task-data" style="display: none;">
                         <span class="prompt">Optimize all database queries for better performance</span>
+                        <span class="description">Analyze and optimize database queries to improve application performance, reduce response times, and enhance overall system efficiency.</span>
+                        <span class="acceptance"></span>
                         <span class="repo-name">db-optimization</span>
                         <span class="code-changes">Modified 3 query files with index optimizations</span>
                         <span class="progress-percent">100</span>
@@ -115,12 +119,12 @@
 
         <div class="column">
             <div class="column-header">Done</div>
-            <div class="task-list"></div>
+            <div class="task-list" ondrop="handleDrop(event)" ondragover="handleDragOver(event)"></div>
         </div>
 
         <div class="column">
             <div class="column-header">Cancelled</div>
-            <div class="task-list"></div>
+            <div class="task-list" ondrop="handleDrop(event)" ondragover="handleDragOver(event)"></div>
         </div>
         <script src="/src/script.js"></script>
     </main>
@@ -139,6 +143,20 @@
                     <label>Prompt used:</label>
                     <div class="prompt-box" id="modalPrompt">
                         Make me thing please build user auth pies
+                    </div>
+                </div>
+
+                <div class="section">
+                    <label>Description</label>
+                    <div class="description-box" id="modalDescription">
+                        
+                    </div>
+                </div>
+
+                <div class="section">
+                    <label>Acceptance</label>
+                    <div class="acceptance-box" id="modalAcceptance">
+                        
                     </div>
                 </div>
 
