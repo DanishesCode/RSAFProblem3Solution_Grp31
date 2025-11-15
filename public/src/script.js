@@ -1,6 +1,4 @@
-/* ======================================================
-   AI AGENT KANBAN — CLEAN SCRIPT (FINAL STABLE VERSION)
-====================================================== */
+
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -19,11 +17,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const activityBtn = document.querySelector(".btn-activity");
     const modalPanel = document.querySelector("#addNewTaskPanel");
     const modal = document.getElementById("addNewTaskPanel");
-
     const modalTitle = modal.querySelector('.modal-title') || modal.querySelector('.panel-title') || modal.querySelector('h2');
     const closeBtn = modal.querySelector(".close-btn");
+    const createBtn = modal.querySelector(".create");
     const cancelBtn = modal.querySelector(".cancel");
-
     const sidebar = document.getElementById("activity-sidebar");
     const sidebarClose = document.getElementById("close-activity");
     const activityContent = document.getElementById("activity-content");
@@ -56,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const searchBar = document.querySelector(".search-bar input");
 
-    /* Repo cards reference */
+    /* Repo cards reference (gets refreshed) */
     let repoCards = [];
 
     /* ======================================================
@@ -340,6 +337,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }, duration);
     }
 
+
     /* ======================================================
        VALIDATION
     ======================================================= */
@@ -362,7 +360,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    // get logs
+//get logs
     const getBacklogsByUser = async (req, res) => {
         try {
         const { userId } = req.query; // GET /backlog/getUserLogs?userId=1
@@ -388,9 +386,15 @@ document.addEventListener("DOMContentLoaded", () => {
         logs.forEach(function(data){
             addTask(data);
         })
-    }
-    intializeLogs()
+}
 
+// wait for logs to load, THEN update workload
+(async () => {
+    await intializeLogs();
+    if (typeof updateAgentWorkload === "function") {
+        updateAgentWorkload();
+    }
+})();
     /* ======================================================
        SEND TO BACKEND
     ======================================================= */
@@ -411,73 +415,101 @@ document.addEventListener("DOMContentLoaded", () => {
     /* ======================================================
        ADD TASK TO UI (UPDATED TO FIT EDIT)
     ======================================================= */
-    function addTask(taskData) {
-        const clone = taskTemplate.cloneNode(true);
-        clone.style.display = "block";
-
-        // Normalize requirements -> always array
-        let requirements = [];
-        if (Array.isArray(taskData.requirements)) {
-            requirements = taskData.requirements;
-        } else if (typeof taskData.requirements === "string") {
-            try {
-                const parsed = JSON.parse(taskData.requirements);
-                if (Array.isArray(parsed)) requirements = parsed;
-                else if (taskData.requirements.trim() !== "") requirements = [taskData.requirements.trim()];
-            } catch {
-                if (taskData.requirements.trim() !== "") requirements = [taskData.requirements.trim()];
-            }
-        }
-
-        // Normalize acceptanceCriteria -> always array
-        let acceptCrit = [];
-        if (Array.isArray(taskData.acceptanceCriteria)) {
-            acceptCrit = taskData.acceptanceCriteria;
-        } else if (typeof taskData.acceptanceCriteria === "string") {
-            try {
-                const parsed = JSON.parse(taskData.acceptanceCriteria);
-                if (Array.isArray(parsed)) acceptCrit = parsed;
-                else if (taskData.acceptanceCriteria.trim() !== "") acceptCrit = [taskData.acceptanceCriteria.trim()];
-            } catch {
-                if (taskData.acceptanceCriteria.trim() !== "") acceptCrit = [taskData.acceptanceCriteria.trim()];
-            }
-        }
-
-        // store attributes so editor can read them
-        clone.setAttribute("taskid", taskData.taskid || `task-${Date.now()}`);
-        clone.setAttribute("status", taskData.status || "toDo");
-        clone.setAttribute("title", taskData.title || "");
-        clone.setAttribute("priority", taskData.priority || "");
-        clone.setAttribute("repo", taskData.repo || "");
-        clone.setAttribute("assignedAgent", taskData.assignedAgent || "");
-        clone.setAttribute("description", taskData.description || "");
-
-        // store normalized arrays
-        clone.setAttribute("requirements", JSON.stringify(requirements));
-        clone.setAttribute("acceptCrit", JSON.stringify(acceptCrit));
-
-        clone.querySelector(".task-title").textContent = taskData.title || "";
-        clone.querySelector(".task-priority").textContent = taskData.priority || "";
-        clone.querySelector(".repoSelected").textContent = `Repo: ${taskData.repo || ""}`;
-        clone.querySelector(".agentSelected").textContent = `Agent: ${taskData.assignedAgent || ""}`;
-
-        document
-            .querySelector(`.column[type="${taskData.status || "toDo"}"] .task-list`)
-            .appendChild(clone);
-
-        if (typeof attachDragListeners === "function") {
-            attachDragListeners();
-        }
-
-        pushActivity({
-            title: taskData.title,
-            agent: taskData.assignedAgent,
-            status: "Created",
-            priority: taskData.priority,
-            repo: taskData.repo,
-            percent: 0
-        });
+    function mapAgentIdToName(id) {
+    switch (String(id)) {
+        case "1": return "Claude";
+        case "2": return "Gemini";
+        case "3": return "OpenAI";
+        default: return "Unknown";
     }
+}
+function addTask(taskData) {
+    const clone = taskTemplate.cloneNode(true);
+    clone.style.display = "block";
+
+    // Normalize requirements -> always array
+    let requirements = [];
+    if (Array.isArray(taskData.requirements)) {
+        requirements = taskData.requirements;
+    } else if (typeof taskData.requirements === "string") {
+        try {
+            const parsed = JSON.parse(taskData.requirements);
+            if (Array.isArray(parsed)) requirements = parsed;
+            else if (taskData.requirements.trim() !== "") requirements = [taskData.requirements.trim()];
+        } catch {
+            if (taskData.requirements.trim() !== "") requirements = [taskData.requirements.trim()];
+        }
+    }
+
+    // Normalize acceptanceCriteria -> always array
+    let acceptCrit = [];
+    if (Array.isArray(taskData.acceptanceCriteria)) {
+        acceptCrit = taskData.acceptanceCriteria;
+    } else if (typeof taskData.acceptanceCriteria === "string") {
+        try {
+            const parsed = JSON.parse(taskData.acceptanceCriteria);
+            if (Array.isArray(parsed)) acceptCrit = parsed;
+            else if (taskData.acceptanceCriteria.trim() !== "") acceptCrit = [taskData.acceptanceCriteria.trim()];
+        } catch {
+            if (taskData.acceptanceCriteria.trim() !== "") acceptCrit = [taskData.acceptanceCriteria.trim()];
+        }
+    }
+
+    // ---- FIXED AGENT HANDLING ----
+    const agentId = taskData.agentId || taskData.agentid || "";
+    const agentName = taskData.assignedAgent || mapAgentIdToName(agentId);
+
+    // store attributes so editor can read them
+    clone.setAttribute("taskid", taskData.taskid || `task-${Date.now()}`);
+    clone.setAttribute("status", taskData.status || "toDo");
+    clone.setAttribute("title", taskData.title || "");
+    clone.setAttribute("priority", taskData.priority || "");
+    clone.setAttribute("repo", taskData.repo || "");
+
+    clone.setAttribute("agentId", agentId);          // ✔ fixed
+    clone.setAttribute("assignedAgent", agentName);  // ✔ fixed
+
+    clone.setAttribute("description", taskData.description || ""); // ✔ KEEP THIS EXACTLY HERE
+
+    // store normalized arrays
+    clone.setAttribute("requirements", JSON.stringify(requirements));
+    clone.setAttribute("acceptCrit", JSON.stringify(acceptCrit));
+
+    // UI elements
+    clone.querySelector(".task-title").textContent = taskData.title || "";
+    clone.querySelector(".task-priority").textContent = taskData.priority || "";
+    clone.querySelector(".repoSelected").textContent = `Repo: ${taskData.repo || ""}`;
+    clone.querySelector(".agentSelected").textContent = `Agent: ${agentName}`;  // ✔ fixed
+
+    // append to correct column
+    document
+        .querySelector(`.column[type="${taskData.status || "toDo"}"] .task-list`)
+        .appendChild(clone);
+
+    if (typeof attachDragListeners === "function") {
+        attachDragListeners();
+    }
+
+    // Attach click -> open edit modal
+    clone.addEventListener("click", (e) => {
+    if (e.target.closest(".task-control")) return;
+
+    const status = clone.getAttribute("status");
+    if (status !== "toDo") return;
+
+    openEditModal(clone);
+});
+
+
+    pushActivity({
+        title: taskData.title,
+        agent: agentName,          // ✔ fixed
+        status: "Created",
+        priority: taskData.priority,
+        repo: taskData.repo,
+        percent: 0
+    });
+}
 
     /* ======================================================
         RESET MODAL
@@ -517,7 +549,7 @@ document.addEventListener("DOMContentLoaded", () => {
     closeBtn.addEventListener("click", () => {
         modalPanel.style.display = "none";
     });
-
+   
     // Cancel button handler
     if (cancelBtn) {
         cancelBtn.addEventListener("click", () => {
@@ -530,7 +562,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Ensure modal dynamic rows can be added
+
+    // Ensure modal dynamic rows can be added (used by openEditModal / new task)
     function addInput(container) {
         if (!container) return null;
         const row = document.createElement("div");
@@ -585,7 +618,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // existing create flow 
+        // --- existing create flow ---
         if (!validateForm()) return;
 
         const formData = collectValues();
@@ -606,6 +639,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function openEditModal(taskEl) {
         if (!taskEl) return;
+        // ignore template element
         if (taskEl.getAttribute('taskid') === 'TEMPLATE') return;
 
         editingTaskElement = taskEl;
@@ -618,10 +652,12 @@ document.addEventListener("DOMContentLoaded", () => {
         // Prefill requirements
         try {
             let raw = taskEl.getAttribute("requirements") || "[]";
+            // If raw is a JSON string of an array or an already stringified array, parse until array
             let reqs = [];
             if (typeof raw === "string") {
                 try {
                     const parsedOnce = JSON.parse(raw);
+                    // parsedOnce might be array or a string containing JSON array
                     if (Array.isArray(parsedOnce)) reqs = parsedOnce;
                     else if (typeof parsedOnce === "string") {
                         try {
@@ -631,6 +667,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         } catch { reqs = [parsedOnce]; }
                     } else reqs = [];
                 } catch {
+                    // raw not JSON -> treat as single value if non-empty
                     if (raw.trim() !== "") reqs = [raw.trim()];
                 }
             } else if (Array.isArray(raw)) {
@@ -658,7 +695,7 @@ document.addEventListener("DOMContentLoaded", () => {
             addInput(requirementContainer);
         }
 
-        // Prefill acceptance criteria
+        // Prefill acceptance criteria (same normalization)
         try {
             let rawA = taskEl.getAttribute("acceptCrit") || "[]";
             let accs = [];
@@ -701,7 +738,7 @@ document.addEventListener("DOMContentLoaded", () => {
             addInput(acceptanceContainer);
         }
 
-        // Select agent card matching assignedAgent attribute
+        // Select agent card matching assignedAgent attribute/value
         const assigned = taskEl.getAttribute('assignedAgent') || "";
         agentCards.forEach(c => c.classList.toggle('selected', c.getAttribute('value') === assigned));
 
