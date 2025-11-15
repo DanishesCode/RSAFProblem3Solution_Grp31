@@ -1,0 +1,132 @@
+/* Global */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f7f4ef;
+    color: #000;
+    text-align: center;
+  }
+  
+  /* Header */
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px;
+  }
+  
+  .filters {
+    background: #c9b59c;
+    border: none;
+    color: #fff;
+    padding: 15px 28px;
+    border-radius: 12px;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  
+  .title-wrap {
+    flex: 1;
+    text-align: center;
+    margin-right: 60px;
+  }
+  
+  .title {
+    font-size: 40px;
+    margin: 0;
+  }
+  
+  .subtitle {
+    color: #555;
+    margin-top: -5px;
+  }
+  
+  /* Chart Section */
+  .chart-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    gap: 125px;
+  }
+  
+  #chart-container {
+    width: 450px;
+    height: 450px;
+    position: relative;
+    padding-left:200px
+  }
+  
+  .center-label {
+    position: absolute;
+    top: 50%;
+    padding-left: 450px;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  
+  .center-label .count {
+    font-size: 50px;
+    font-weight: bold;
+  }
+  
+  .center-label .count-sub {
+    margin-top: -8px;
+    font-size: 18px;
+    color: #444;
+  }
+  
+  /* Legend */
+  .legend {
+    text-align: left;
+    font-size: 18px;
+  }
+  
+  .legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    margin-right: 8px;
+  }
+  
+  .swatch-todo {
+    background: #c9b59c;
+  }
+  
+  .swatch-progress {
+    background: #1a3ee0;
+  }
+  
+  .swatch-review {
+    background: #2f6fff;
+  }
+  
+  .swatch-done {
+    background: #17d64a;
+  }
+  
+  .swatch-cancel {
+    background: #ff2d2d;
+  }
+  
+  /* Back Button */
+  .back-btn-wrap {
+    margin-top: 40px;
+  }
+  
+  .back {
+    background: #c9b59c;
+    border: none;
+    color: white;
+    padding: 15px 30px;
+    font-size: 22px;
+    border-radius: 12px;
+    cursor: pointer;
+    margin: auto auto;
+  }

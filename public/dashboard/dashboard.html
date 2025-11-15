@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard - Pie Chart</title>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <button class="filters">Filters</button>
+      <div class="title-wrap">
+        <h1 class="title">Dashboard</h1>
+        <div class="subtitle">Filters: None</div>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="chart-area">
+        <div id="chart-container">
+          <canvas id="taskChart" aria-label="Tasks donut chart" role="img"></canvas>
+          <div class="center-label">
+            <div class="count" id="totalCount">--</div>
+            <div class="count-sub">Total Tasks</div>
+          </div>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item"><span class="swatch swatch-todo"></span>To-Do</div>
+          <div class="legend-item"><span class="swatch swatch-progress"></span>In Progress</div>
+          <div class="legend-item"><span class="swatch swatch-review"></span>In Review</div>
+          <div class="legend-item"><span class="swatch swatch-done"></span>Done</div>
+          <div class="legend-item"><span class="swatch swatch-cancel"></span>Cancelled</div>
+        </div>
+      </div>
+
+      <div class="back-btn-wrap">
+        <button class="back">Back to main page</button>
+      </div>
+    </main>
+
+    <!-- App script -->
+    <script src="script.js" defer></script>
+  </body>
+</html>
