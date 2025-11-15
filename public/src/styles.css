@@ -426,27 +426,13 @@ main {
     background-color: #f0fff0;
 }
 
-#createBtn.save,
-#createBtn.create.save {
-  background: #61b464 !important;
-  color: #fff !important;
-  border: none !important;
-  padding: 8px 14px !important;
-  border-radius: 6px !important;
-  cursor: pointer !important;
-}
-
-#createBtn.save:hover {
-  background: #5a975d !important;
-}
-
-/* ===== Animations ===== */
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* Container for stacking notifications */
+  
+  /* ===== Animations ===== */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  /* Container for stacking notifications */
 #notification-container {
     position: fixed;
     bottom: 20px;
@@ -670,4 +656,14 @@ main {
 @media (max-width: 880px) {
   .search-bar input { max-width: 320px; }
   .filter-panel { right: 12px; width: 90%; top: 72px; }
+}
+
+.agent-status.green {
+    color: #3cb371; /* green */
+}
+.agent-status.yellow {
+    color: #e6a700; /* yellow */
+}
+.agent-status.red {
+    color: #e63946; /* red */
 }
