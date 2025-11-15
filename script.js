@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const activityBtn = document.querySelector(".btn-activity");
     const modalPanel = document.querySelector("#addNewTaskPanel");
     const modal = document.getElementById("addNewTaskPanel");
+    const modalTitle = modal.querySelector('.modal-title') || modal.querySelector('.panel-title') || modal.querySelector('h2');
     const closeBtn = modal.querySelector(".close-btn");
     const cancelBtn = modal.querySelector(".cancel");
     const createBtn = modal.querySelector(".create");
@@ -348,31 +349,71 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /* ======================================================
-       ADD TASK TO UI
+       ADD TASK TO UI (UPDATED TO FIT EDIT)
     ======================================================= */
     function addTask(taskData) {
         const clone = taskTemplate.cloneNode(true);
         clone.style.display = "block";
 
-        clone.setAttribute("taskid", taskData.taskid);
-        clone.setAttribute("status", taskData.status);
-        clone.setAttribute("title", taskData.title);
-        clone.setAttribute("priority", taskData.priority);
-        clone.setAttribute("repo", taskData.repo);
-        clone.setAttribute("assignedAgent", taskData.assignedAgent);
+        // Normalize requirements -> always array
+        let requirements = [];
+        if (Array.isArray(taskData.requirements)) {
+            requirements = taskData.requirements;
+        } else if (typeof taskData.requirements === "string") {
+            try {
+                const parsed = JSON.parse(taskData.requirements);
+                if (Array.isArray(parsed)) requirements = parsed;
+                else if (taskData.requirements.trim() !== "") requirements = [taskData.requirements.trim()];
+            } catch {
+                if (taskData.requirements.trim() !== "") requirements = [taskData.requirements.trim()];
+            }
+        }
 
-        clone.querySelector(".task-title").textContent = taskData.title;
-        clone.querySelector(".task-priority").textContent = taskData.priority;
-        clone.querySelector(".repoSelected").textContent = `Repo: ${taskData.repo}`;
-        clone.querySelector(".agentSelected").textContent = `Agent: ${taskData.assignedAgent}`;
+        // Normalize acceptanceCriteria -> always array
+        let acceptCrit = [];
+        if (Array.isArray(taskData.acceptanceCriteria)) {
+            acceptCrit = taskData.acceptanceCriteria;
+        } else if (typeof taskData.acceptanceCriteria === "string") {
+            try {
+                const parsed = JSON.parse(taskData.acceptanceCriteria);
+                if (Array.isArray(parsed)) acceptCrit = parsed;
+                else if (taskData.acceptanceCriteria.trim() !== "") acceptCrit = [taskData.acceptanceCriteria.trim()];
+            } catch {
+                if (taskData.acceptanceCriteria.trim() !== "") acceptCrit = [taskData.acceptanceCriteria.trim()];
+            }
+        }
+
+        // store attributes so editor can read them
+        clone.setAttribute("taskid", taskData.taskid || `task-${Date.now()}`);
+        clone.setAttribute("status", taskData.status || "toDo");
+        clone.setAttribute("title", taskData.title || "");
+        clone.setAttribute("priority", taskData.priority || "");
+        clone.setAttribute("repo", taskData.repo || "");
+        clone.setAttribute("assignedAgent", taskData.assignedAgent || "");
+        clone.setAttribute("description", taskData.description || "");
+
+        // store normalized arrays
+        clone.setAttribute("requirements", JSON.stringify(requirements));
+        clone.setAttribute("acceptCrit", JSON.stringify(acceptCrit));
+
+        clone.querySelector(".task-title").textContent = taskData.title || "";
+        clone.querySelector(".task-priority").textContent = taskData.priority || "";
+        clone.querySelector(".repoSelected").textContent = `Repo: ${taskData.repo || ""}`;
+        clone.querySelector(".agentSelected").textContent = `Agent: ${taskData.assignedAgent || ""}`;
 
         document
-            .querySelector(`.column[type="${taskData.status}"] .task-list`)
+            .querySelector(`.column[type="${taskData.status || "toDo"}"] .task-list`)
             .appendChild(clone);
 
         if (typeof attachDragListeners === "function") {
             attachDragListeners();
         }
+
+        // Attach click -> open edit modal for this task
+        clone.addEventListener("click", (e) => {
+            if (e.target.closest(".task-control")) return;
+            openEditModal(clone);
+        });
 
         pushActivity({
             title: taskData.title,
@@ -385,7 +426,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /* ======================================================
-       RESET MODAL
+        RESET MODAL
     ======================================================= */
     function resetModal() {
         titleInput.value = "";
@@ -401,12 +442,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /* ======================================================
-       OPEN MODAL
+        OPEN MODAL
     ======================================================= */
     newBtn.addEventListener("click", () => {
         resetModal();
         loadReposIntoModal();   // IMPORTANT
         modalPanel.style.display = "block";
+        editingTaskElement = null;                         // clear edit state
+        createBtn.textContent = "Create Task";
+        createBtn.classList.remove("save");
+        createBtn.classList.add("create");
+        if (modalTitle) modalTitle.textContent = "Create Task"; // update header if present
     });
 
     closeBtn.addEventListener("click", () => {
@@ -417,10 +463,62 @@ document.addEventListener("DOMContentLoaded", () => {
         modalPanel.style.display = "none";
     });
 
+    // Ensure modal dynamic rows can be added (used by openEditModal / new task)
+    function addInput(container) {
+        if (!container) return null;
+        const row = document.createElement("div");
+        row.className = "add-row";
+        row.innerHTML = `<input type="text" value="" /><button class="add-btn">+</button>`;
+        const btn = row.querySelector(".add-btn");
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            addInput(container);
+        });
+        container.appendChild(row);
+        return row;
+    }
+
     /* ======================================================
-       CREATE TASK
+       CREATE TASK (UPDATED FOR EDIT)
     ======================================================= */
     createBtn.addEventListener("click", async () => {
+        // If editing an existing task, update DOM instead of creating
+        if (editingTaskElement) {
+            if (!validateForm()) return;
+
+            const values = collectValues();
+
+            // update stored attributes
+            editingTaskElement.setAttribute("title", values.title);
+            editingTaskElement.setAttribute("description", values.description || "");
+            editingTaskElement.setAttribute("priority", values.priority);
+            editingTaskElement.setAttribute("assignedAgent", values.assignedAgent || "");
+            editingTaskElement.setAttribute("repo", values.repo || "");
+            editingTaskElement.setAttribute("requirements", JSON.stringify(values.requirements || []));
+            editingTaskElement.setAttribute("acceptCrit", JSON.stringify(values.acceptanceCriteria || []));
+
+            // update visible fields
+            const tt = editingTaskElement.querySelector(".task-title");
+            if (tt) tt.textContent = values.title;
+            const pp = editingTaskElement.querySelector(".task-priority");
+            if (pp) pp.textContent = values.priority;
+            const rp = editingTaskElement.querySelector(".repoSelected");
+            if (rp) rp.textContent = `Repo: ${values.repo || ""}`;
+            const ag = editingTaskElement.querySelector(".agentSelected");
+            if (ag) ag.textContent = `Agent: ${values.assignedAgent || ""}`;
+
+            // close modal and reset edit state
+            modalPanel.style.display = "none";
+            editingTaskElement = null;
+            createBtn.textContent = "Create Task";
+            createBtn.classList.remove("save");
+            createBtn.classList.add("create");
+            if (modalTitle) modalTitle.textContent = "Create Task";
+            resetModal();
+            return;
+        }
+
+        // --- existing create flow ---
         if (!validateForm()) return;
 
         const formData = collectValues();
@@ -435,7 +533,134 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     /* ======================================================
+       OPEN EDIT TASK
+    ======================================================= */
+    let editingTaskElement = null;
+
+    function openEditModal(taskEl) {
+        if (!taskEl) return;
+        // ignore template element
+        if (taskEl.getAttribute('taskid') === 'TEMPLATE') return;
+
+        editingTaskElement = taskEl;
+
+        // Prefill simple inputs
+        titleInput.value = taskEl.getAttribute('title') || taskEl.querySelector('.task-title')?.textContent || "";
+        descriptionInput.value = taskEl.getAttribute('description') || "";
+        prioritySelect.value = taskEl.getAttribute('priority') || "medium";
+
+        // Prefill requirements
+        try {
+            let raw = taskEl.getAttribute("requirements") || "[]";
+            // If raw is a JSON string of an array or an already stringified array, parse until array
+            let reqs = [];
+            if (typeof raw === "string") {
+                try {
+                    const parsedOnce = JSON.parse(raw);
+                    // parsedOnce might be array or a string containing JSON array
+                    if (Array.isArray(parsedOnce)) reqs = parsedOnce;
+                    else if (typeof parsedOnce === "string") {
+                        try {
+                            const parsedTwice = JSON.parse(parsedOnce);
+                            if (Array.isArray(parsedTwice)) reqs = parsedTwice;
+                            else reqs = [parsedOnce];
+                        } catch { reqs = [parsedOnce]; }
+                    } else reqs = [];
+                } catch {
+                    // raw not JSON -> treat as single value if non-empty
+                    if (raw.trim() !== "") reqs = [raw.trim()];
+                }
+            } else if (Array.isArray(raw)) {
+                reqs = raw;
+            }
+
+            requirementContainer.innerHTML = "";
+            if (!reqs || reqs.length === 0) {
+                addInput(requirementContainer);
+            } else {
+                reqs.forEach(val => {
+                    const row = document.createElement("div");
+                    row.className = "add-row";
+                    row.innerHTML = `<input type="text" value="${(val + '').replace(/"/g, '&quot;')}" /><button class="add-btn">+</button>`;
+                    const btn = row.querySelector(".add-btn");
+                    btn.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        addInput(requirementContainer);
+                    });
+                    requirementContainer.appendChild(row);
+                });
+            }
+        } catch (e) {
+            requirementContainer.innerHTML = "";
+            addInput(requirementContainer);
+        }
+
+        // Prefill acceptance criteria (same normalization)
+        try {
+            let rawA = taskEl.getAttribute("acceptCrit") || "[]";
+            let accs = [];
+            if (typeof rawA === "string") {
+                try {
+                    const p1 = JSON.parse(rawA);
+                    if (Array.isArray(p1)) accs = p1;
+                    else if (typeof p1 === "string") {
+                        try {
+                            const p2 = JSON.parse(p1);
+                            if (Array.isArray(p2)) accs = p2;
+                            else accs = [p1];
+                        } catch { accs = [p1]; }
+                    } else accs = [];
+                } catch {
+                    if (rawA.trim() !== "") accs = [rawA.trim()];
+                }
+            } else if (Array.isArray(rawA)) {
+                accs = rawA;
+            }
+
+            acceptanceContainer.innerHTML = "";
+            if (!accs || accs.length === 0) {
+                addInput(acceptanceContainer);
+            } else {
+                accs.forEach(val => {
+                    const row = document.createElement("div");
+                    row.className = "add-row";
+                    row.innerHTML = `<input type="text" value="${(val + '').replace(/"/g, '&quot;')}" /><button class="add-btn">+</button>`;
+                    const btn = row.querySelector(".add-btn");
+                    btn.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        addInput(acceptanceContainer);
+                    });
+                    acceptanceContainer.appendChild(row);
+                });
+            }
+        } catch (e) {
+            acceptanceContainer.innerHTML = "";
+            addInput(acceptanceContainer);
+        }
+
+        // Select agent card matching assignedAgent attribute/value
+        const assigned = taskEl.getAttribute('assignedAgent') || "";
+        agentCards.forEach(c => c.classList.toggle('selected', c.getAttribute('value') === assigned));
+
+        // Load repos and pick the matching repo card
+        loadReposIntoModal();
+        const repoVal = taskEl.getAttribute('repo') || "";
+        repoCards.forEach(r => {
+            const v = r.querySelector('strong')?.getAttribute('value') || "";
+            r.classList.toggle('selected', v === repoVal);
+        });
+
+        // Switch modal into edit mode visually
+        modalPanel.style.display = "block";
+        createBtn.textContent = "Save";
+        createBtn.classList.add("save");
+        createBtn.classList.remove("create");
+        if (modalTitle) modalTitle.textContent = "Edit Task";
+    }
+
+    /* ======================================================
        EXPOSE pushActivity TO dragAndDrop.js
     ======================================================= */
     window.pushActivity = pushActivity;
+
 });

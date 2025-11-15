@@ -49,15 +49,11 @@ header {
     position: relative;
 }
 .search-bar input {
-    flex: 1;
-    max-width: 640px;
-    min-width: 200px;
-    padding: 8px 12px;
-    border-radius: 10px;
-    border: 1px solid #dcdcdc;
-}
-.search-actions {
-    margin-left: 8px;
+    width: 50%;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-family: var(--font);
 }
 
 .top-buttons button {
@@ -149,9 +145,12 @@ main {
     padding: 10px;
     margin-bottom: 10px;
     font-size: 14px;
+    cursor: pointer;
 }
 
-.task-title { font-weight: bold; }
+.task-title { 
+  font-weight: bold; 
+}
 
 .task-priority {
     font-size: 12px;
