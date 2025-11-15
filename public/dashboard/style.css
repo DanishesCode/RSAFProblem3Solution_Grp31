@@ -96,23 +96,23 @@ body {
   }
   
   .swatch-todo {
-    background: #c9b59c;
+    background: #4D4D5B;
   }
   
   .swatch-progress {
-    background: #1a3ee0;
+    background: #1D27DA;
   }
   
   .swatch-review {
-    background: #2f6fff;
+    background: #181FAA;
   }
   
   .swatch-done {
-    background: #17d64a;
+    background: #15D94A;
   }
   
   .swatch-cancel {
-    background: #ff2d2d;
+    background: #F71E21;
   }
   
   /* Back Button */
