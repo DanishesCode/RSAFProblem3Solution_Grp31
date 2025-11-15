@@ -19,10 +19,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const activityBtn = document.querySelector(".btn-activity");
     const modalPanel = document.querySelector("#addNewTaskPanel");
     const modal = document.getElementById("addNewTaskPanel");
+
     const modalTitle = modal.querySelector('.modal-title') || modal.querySelector('.panel-title') || modal.querySelector('h2');
     const closeBtn = modal.querySelector(".close-btn");
     const cancelBtn = modal.querySelector(".cancel");
-    const createBtn = modal.querySelector(".create");
+
     const sidebar = document.getElementById("activity-sidebar");
     const sidebarClose = document.getElementById("close-activity");
     const activityContent = document.getElementById("activity-content");
@@ -34,8 +35,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const agentCards = Array.from(modal.querySelectorAll(".agent-card"));
 
     const addRows = modal.querySelectorAll(".modal-body .add-row");
-    const requirementContainer = addRows[0];
-    const acceptanceContainer = addRows[1];
+    const requirementContainer = modal.querySelector("#requirements-container");
+    const acceptanceContainer = modal.querySelector("#acceptance-container");
+    // Fallback: if structure differs, manually find by label proximity
+    if (!requirementContainer || !acceptanceContainer) {
+        const labels = Array.from(modal.querySelectorAll("label"));
+        const reqLabel = labels.find(l => l.textContent.includes("Requirements"));
+        const accLabel = labels.find(l => l.textContent.includes("Acceptance"));
+        if (reqLabel) requirementContainer = reqLabel.nextElementSibling;
+        if (accLabel) acceptanceContainer = accLabel.nextElementSibling;
+    }
 
     const githubProjectsContainer = modal.querySelector(".github-projects");
 
@@ -47,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const searchBar = document.querySelector(".search-bar input");
 
-    /* Repo cards reference (gets refreshed) */
+    /* Repo cards reference */
     let repoCards = [];
 
     /* ======================================================
@@ -311,6 +320,27 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /* ======================================================
+       NOTIFICATION SYSTEM (if not already present)
+    ======================================================= */
+    function notify(message, duration = 2500, type = "error") {
+        const container = document.getElementById("notification-container");
+        if (!container) return;
+
+        const notif = document.createElement("div");
+        notif.className = `notification ${type}`;
+        notif.innerHTML = `
+            <div class="notification-icon">⚠</div>
+            <span>${message}</span>
+        `;
+        container.appendChild(notif);
+
+        setTimeout(() => {
+            notif.style.animation = "slideOut 0.3s ease forwards";
+            setTimeout(() => notif.remove(), 300);
+        }, duration);
+    }
+
+    /* ======================================================
        VALIDATION
     ======================================================= */
     function validateForm() {
@@ -325,41 +355,42 @@ document.addEventListener("DOMContentLoaded", () => {
         if (v.acceptanceCriteria.length === 0) missing.push("Acceptance Criteria");
 
         if (missing.length > 0) {
-            alert("Missing fields:\n- " + missing.join("\n- "));
+            notify("Missing fields:\n- " + missing.join("\n- "), 3500, "error");
             return false;
         }
         return true;
     }
 
 
-//get logs
-const getBacklogsByUser = async (req, res) => {
-    try {
-      const { userId } = req.query; // GET /backlog/getUserLogs?userId=1
-  
-      if (!userId) {
-        return res.status(400).send("Missing userId in request.");
-      }
-  
-      const data = await getBacklogsByUserId(userId);
-  
-      res.json(data);
-    } catch (err) {
-      console.error(err);
-      res.status(500).send("Failed to retrieve user backlogs");
+    // get logs
+    const getBacklogsByUser = async (req, res) => {
+        try {
+        const { userId } = req.query; // GET /backlog/getUserLogs?userId=1
+    
+        if (!userId) {
+            return res.status(400).send("Missing userId in request.");
+        }
+    
+        const data = await getBacklogsByUserId(userId);
+    
+        res.json(data);
+        } catch (err) {
+        console.error(err);
+        res.status(500).send("Failed to retrieve user backlogs");
+        }
+    };
+    
+    //initialize logs
+    async function intializeLogs(){
+        let userId = localStorage.getItem("userId");
+        const logs = await fetch(`/backlog/getUserLogs?userId=${userId}`)
+                        .then(res => res.json());
+        logs.forEach(function(data){
+            addTask(data);
+        })
     }
-  };
-  
-//initialize logs
-async function intializeLogs(){
-    let userId = localStorage.getItem("userId");
-    const logs = await fetch(`/backlog/getUserLogs?userId=${userId}`)
-                    .then(res => res.json());
-    logs.forEach(function(data){
-        addTask(data);
-    })
-}
-intializeLogs()
+    intializeLogs()
+
     /* ======================================================
        SEND TO BACKEND
     ======================================================= */
@@ -438,12 +469,6 @@ intializeLogs()
             attachDragListeners();
         }
 
-        // Attach click -> open edit modal for this task
-        clone.addEventListener("click", (e) => {
-            if (e.target.closest(".task-control")) return;
-            openEditModal(clone);
-        });
-
         pushActivity({
             title: taskData.title,
             agent: taskData.assignedAgent,
@@ -464,8 +489,13 @@ intializeLogs()
         tags.forEach(t => t.classList.remove("selected"));
         agentCards.forEach(a => a.classList.remove("selected"));
 
-        requirementContainer.querySelector("input").value = "";
-        acceptanceContainer.querySelector("input").value = "";
+        // Clear and reset containers
+        requirementContainer.innerHTML = "";
+        acceptanceContainer.innerHTML = "";
+        
+        // Add single empty input to each
+        addInput(requirementContainer);
+        addInput(acceptanceContainer);
 
         repoCards.forEach(r => r.classList.remove("selected"));
     }
@@ -488,10 +518,19 @@ intializeLogs()
         modalPanel.style.display = "none";
     });
 
+    // Cancel button handler
+    if (cancelBtn) {
+        cancelBtn.addEventListener("click", () => {
+            modalPanel.style.display = "none";
+            editingTaskElement = null;
+            createBtn.textContent = "Create Task";
+            createBtn.classList.remove("save");
+            createBtn.classList.add("create");
+            resetModal();
+        });
+    }
 
-
-
-    // Ensure modal dynamic rows can be added (used by openEditModal / new task)
+    // Ensure modal dynamic rows can be added
     function addInput(container) {
         if (!container) return null;
         const row = document.createElement("div");
@@ -546,7 +585,7 @@ intializeLogs()
             return;
         }
 
-        // --- existing create flow ---
+        // existing create flow 
         if (!validateForm()) return;
 
         const formData = collectValues();
@@ -567,7 +606,6 @@ intializeLogs()
 
     function openEditModal(taskEl) {
         if (!taskEl) return;
-        // ignore template element
         if (taskEl.getAttribute('taskid') === 'TEMPLATE') return;
 
         editingTaskElement = taskEl;
@@ -580,12 +618,10 @@ intializeLogs()
         // Prefill requirements
         try {
             let raw = taskEl.getAttribute("requirements") || "[]";
-            // If raw is a JSON string of an array or an already stringified array, parse until array
             let reqs = [];
             if (typeof raw === "string") {
                 try {
                     const parsedOnce = JSON.parse(raw);
-                    // parsedOnce might be array or a string containing JSON array
                     if (Array.isArray(parsedOnce)) reqs = parsedOnce;
                     else if (typeof parsedOnce === "string") {
                         try {
@@ -595,7 +631,6 @@ intializeLogs()
                         } catch { reqs = [parsedOnce]; }
                     } else reqs = [];
                 } catch {
-                    // raw not JSON -> treat as single value if non-empty
                     if (raw.trim() !== "") reqs = [raw.trim()];
                 }
             } else if (Array.isArray(raw)) {
@@ -623,7 +658,7 @@ intializeLogs()
             addInput(requirementContainer);
         }
 
-        // Prefill acceptance criteria (same normalization)
+        // Prefill acceptance criteria
         try {
             let rawA = taskEl.getAttribute("acceptCrit") || "[]";
             let accs = [];
@@ -666,7 +701,7 @@ intializeLogs()
             addInput(acceptanceContainer);
         }
 
-        // Select agent card matching assignedAgent attribute/value
+        // Select agent card matching assignedAgent attribute
         const assigned = taskEl.getAttribute('assignedAgent') || "";
         agentCards.forEach(c => c.classList.toggle('selected', c.getAttribute('value') === assigned));
 
@@ -685,6 +720,23 @@ intializeLogs()
         createBtn.classList.remove("create");
         if (modalTitle) modalTitle.textContent = "Edit Task";
     }
+
+    // edit task only for todo column
+    document.addEventListener('click', (e) => {
+        const taskEl = e.target.closest('.task');
+        if (!taskEl) return;
+        // ignore the template element
+        if (taskEl.getAttribute && taskEl.getAttribute('taskid') === 'TEMPLATE') return;
+        // ignore clicks on internal controls
+        if (e.target.closest('.task-control') || e.target.closest('.add-btn')) return;
+        
+        // Check if task is in a toDo column ONLY
+        const column = taskEl.closest('.column');
+        if (!column || column.getAttribute('type') !== 'toDo') return;
+        
+        // open modal prefilling fields
+        openEditModal(taskEl);
+    });
 
     /* ======================================================
        EXPOSE pushActivity TO dragAndDrop.js
