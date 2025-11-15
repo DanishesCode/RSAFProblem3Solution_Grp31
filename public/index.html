@@ -18,6 +18,33 @@
 
         <div class="search-bar">
             <input type="text" placeholder="Search tasks...">
+            <div class="search-actions">
+                <button class="btn-filter" id="open-filter">Filter</button>
+            </div>
+        </div>
+
+        <!-- FILTER PANEL DROPDOWN -->
+        <div id="filterPanel" class="filter-panel hidden" aria-hidden="true">
+            <div class="filter-panel-inner">
+                <div class="filter-header">
+                    <strong>Filter Tasks</strong>
+                    <button id="close-filter" class="close-filter">✕</button>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-section-title">Repository</div>
+                    <div id="filter-repos"></div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-section-title">Agent</div>
+                    <div id="filter-agents"></div>
+                </div>
+
+                <div class="filter-actions">
+                    <button id="clear-filters" class="filter-clear">Clear</button>
+                </div>
+            </div>
         </div>
 
         <div class="top-buttons">
@@ -112,7 +139,7 @@
                         <input type="text" placeholder="Enter task title..." />
 
                         <label>Description</label>
-                        <textarea placeholder="Describe the task in detail..."></textarea>
+                        <textarea type="text" placeholder="Describe the task in detail..."></textarea>
 
                         <label>Priority</label>
                         <select>
@@ -185,8 +212,7 @@
             <div id="activity-content" class="activity-content">
                 <!-- Events will be injected here -->
             </div>
-        </div>
-
+        </div>     
     </main>
 
     <script src="src/script.js"></script>
