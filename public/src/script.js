@@ -1,367 +1,201 @@
-document.addEventListener("DOMContentLoaded", function() {
-    if(localStorage.getItem("githubId") == "" || localStorage.getItem("githubId") == null){
-        window.location.href = "http://localhost:3000/login/"
+/* ======================================================
+   AI AGENT KANBAN — CLEAN SCRIPT (FINAL STABLE VERSION)
+====================================================== */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    /* -------------------------
+       Redirect if not logged in
+    --------------------------*/
+    if (!localStorage.getItem("githubId")) {
+        window.location.href = "http://localhost:3000/login/";
+        return;
     }
 
-
+    /* -------------------------
+       DOM ELEMENTS
+    --------------------------*/
     const newBtn = document.querySelector(".btn-new");
-    const addNewTaskPanel = document.querySelector("#addNewTaskPanel");
+    const activityBtn = document.querySelector(".btn-activity");
+    const modalPanel = document.querySelector("#addNewTaskPanel");
     const modal = document.getElementById("addNewTaskPanel");
-    if (!modal) return;
-
     const closeBtn = modal.querySelector(".close-btn");
     const cancelBtn = modal.querySelector(".cancel");
     const createBtn = modal.querySelector(".create");
+    const sidebar = document.getElementById("activity-sidebar");
+    const sidebarClose = document.getElementById("close-activity");
+    const activityContent = document.getElementById("activity-content");
 
     const titleInput = modal.querySelector('input[type="text"]');
     const descriptionInput = modal.querySelector("textarea");
     const prioritySelect = modal.querySelector("select");
-    const estimatedTimeInput = modal.querySelector('input[type="number"]');
     const tags = Array.from(modal.querySelectorAll(".tags span"));
     const agentCards = Array.from(modal.querySelectorAll(".agent-card"));
+
     const addRows = modal.querySelectorAll(".modal-body .add-row");
     const requirementContainer = addRows[0];
     const acceptanceContainer = addRows[1];
-    const requirementAddBtn = requirementContainer.querySelector(".add-btn");
-    const acceptanceAddBtn = acceptanceContainer.querySelector(".add-btn");
+
     const githubProjectsContainer = modal.querySelector(".github-projects");
-    const reposString = localStorage.getItem("repos"); // "repo1,repo2,..."
+
+    const reposString = localStorage.getItem("repos");
     const repos = reposString ? reposString.split(",") : [];
 
     const apiBaseUrl = "http://localhost:3000";
-    const task = document.querySelector(".task");
-    const searchBar = document.querySelector(".search-bar");
+    const taskTemplate = document.querySelector(".task");
 
+    const searchBar = document.querySelector(".search-bar input");
 
-    // Simulate agent workload every few seconds
-    const agents = document.querySelectorAll('.agent-status.working');
-    setInterval(() => {
-        agents.forEach(a => {
-            const random = Math.floor(Math.random() * 75) + 5;
-            a.textContent = `Working - ${random}%`;
-        });
-    }, 2000);
+    /* Repo cards reference (gets refreshed) */
+    let repoCards = [];
 
-
-    //Create new task
-        newBtn.addEventListener("click", function(){
-            addNewTaskPanel.style.display = "block";
-        });
-   // ---- Tag selection & agent filtering ----
-tags.forEach(tag => {
-    tag.addEventListener("click", () => {
-        tag.classList.toggle("selected"); // add/remove highlight
-        filterAgents();
-    });
-});
-
-searchBar.querySelector("input").addEventListener("keyup", function(){
-    let query = this.value.toLowerCase();  
-    let items = document.querySelectorAll(".task");
-
-    for (let i = 0; i < items.length; i++) {
-        const itemText = items[i].getAttribute("title").toLowerCase();
-
-        if (itemText.includes(query)) {
-            items[i].style.display = 'block';
-        } else {
-            items[i].style.display = 'none';
-        }
-
-        if (items[i].getAttribute("title") === "Example Task Title") {
-            items[i].style.display = "none";
-        }
-    }
-});
-
-
-//notification module
-function notify(message, duration = 2500, type = "success") { //--example error: notify("Failed to update task!", 2500, "error"); success: notify("Task moved to in-progress");
-    const container = document.getElementById("notification-container");
-  
-    const notification = document.createElement("div");
-    notification.classList.add("notification", type);
-  
-    const icon = type === "error" ? "⚠" : "✔";
-  
-    notification.innerHTML = `
-      <div class="notification-icon">${icon}</div>
-      <div>${message}</div>
-    `;
-  
-    container.appendChild(notification);
-  
-    // Auto remove after duration
-    setTimeout(() => {
-      notification.style.animation = "slideOut 0.4s ease forwards";
-      setTimeout(() => notification.remove(), 400);
-    }, duration);
-  }
-  
-
-function filterAgents() {
-    // get selected capabilities
-    const selectedCapabilities = tags
-        .filter(tag => tag.classList.contains("selected"))
-        .map(tag => tag.getAttribute("value").trim()); // trim whitespace
-
-    agentCards.forEach(card => {
-        const agentFilters = card.getAttribute("filter")
-            .split(",")
-            .map(f => f.trim()); // trim whitespace
-
-        // if no capability selected, show all agents
-        if (selectedCapabilities.length === 0) {
-            card.style.display = "block";
-            return;
-        }
-
-        // only show agents that have all selected capabilities
-        const match = selectedCapabilities.every(cap => agentFilters.includes(cap));
-        card.style.display = match ? "block" : "none";
-    });
-}
-
-// ---- Dynamic input rows ----
-function addInput(container) {
-    const newRow = document.createElement("div");
-    newRow.classList.add("add-row");
-    newRow.innerHTML = `
-        <input type="text" placeholder="${container === requirementContainer ? "Add a requirement..." : "Add acceptance criteria..."}" />
-        <button class="add-btn">+</button>
-    `;
-    container.appendChild(newRow);
-
-    // Attach click event for the new add button
-    const newAddBtn = newRow.querySelector(".add-btn");
-    newAddBtn.addEventListener("click", () => addInput(container));
-}
-
-
-
-// ---- Agent selection ----
-agentCards.forEach(card => {
-    card.addEventListener("click", () => {
-        agentCards.forEach(c => c.classList.remove("selected"));
-        card.classList.add("selected");
-    });
-});
-
-// ---- Collect all values ----
-function collectValues() {
-    const selectedCapabilities = tags
-        .filter(tag => tag.classList.contains("selected"))
-        .map(tag => tag.getAttribute("value"));
-
-    const requirements = Array.from(requirementContainer.querySelectorAll("input"))
-        .map(input => input.value.trim())
-        .filter(val => val);
-
-    const acceptanceCriteria = Array.from(acceptanceContainer.querySelectorAll("input"))
-        .map(input => input.value.trim())
-        .filter(val => val);
-
-    const selectedAgent = agentCards.find(card => card.classList.contains("selected"));
-
-    const selectedRepoCard = modal.querySelector(".repo-card.selected strong");
-const githubProject = selectedRepoCard ? selectedRepoCard.getAttribute("value") : null;
-
-return {
-    title: titleInput.value.trim(),
-    description: descriptionInput.value.trim(),
-    priority: prioritySelect.value,
-    requirements,
-    acceptanceCriteria,
-    assignedAgent: selectedAgent ? selectedAgent.getAttribute("value") : null,
-    repo: githubProject,
-    agentId: selectedAgent ?  selectedAgent.getAttribute("agentid") : null,
-    status:"toDo"
-};
-}
-// ---- Highlight selected capabilities ----
-//initialize repo
-repos.forEach(repoName => {
-    const card = document.createElement("div");
-    card.classList.add("repo-card");
-    card.innerHTML = `<strong value="${repoName.trim()}">${repoName.trim()}</strong>`;
-    
-    // Add click event to select
-    card.addEventListener("click", () => {
-        // Remove selection from all repo cards
-        githubProjectsContainer.querySelectorAll(".repo-card").forEach(c => c.classList.remove("selected"));
-        card.classList.add("selected");
+    /* ======================================================
+       SIDEBAR — ACTIVITY
+    ======================================================= */
+    activityBtn.addEventListener("click", () => {
+        sidebar.classList.add("open");
     });
 
-    githubProjectsContainer.appendChild(card);
-});
-
-
-
-// ---- Highlight selected GitHub project ----
-const repoCards = Array.from(modal.querySelectorAll(".repo-card"));
-
-repoCards.forEach(card => {
-    if(card.querySelector("strong").getAttribute("value") !== "node-api-server"){
-        card.style.display = "block";
-    }
-    card.addEventListener("click", () => {
-        // Remove highlight from all
-        repoCards.forEach(c => c.classList.remove("selected"));
-        // Highlight clicked
-        card.classList.add("selected");
+    sidebarClose.addEventListener("click", () => {
+        sidebar.classList.remove("open");
     });
-});
 
+    function pushActivity({ title, agent, status, priority, repo, percent }) {
+        const entry = document.createElement("div");
+        entry.className = "activity-entry";
 
-// ---- Validate form ----
-function validateForm() {
-    const values = collectValues();
-    const missingFields = [];
+        entry.innerHTML = `
+            <div class="activity-entry-title">${title}</div>
+            <small>Status: <b>${status}</b></small><br>
+            <small>Agent: ${agent}</small><br>
+            <small>Priority: ${priority}</small><br>
+            <small>Repo: ${repo}</small><br>
+            <small>Progress: ${percent}%</small>
+        `;
 
-    if (!values.title) missingFields.push("Task Title");
-    if (!values.description) missingFields.push("Description");
-    if (!values.priority) missingFields.push("Priority");
-    if (values.requirements.length === 0) missingFields.push("Requirements");
-    if (values.acceptanceCriteria.length === 0) missingFields.push("Acceptance Criteria");
-    if (!values.assignedAgent) missingFields.push("Assigned Agent");
-    if (!values.repo) missingFields.push("GitHub Project"); // new validation
-
-    if (missingFields.length > 0) {
-        notify("Please complete the following fields:\n- " + missingFields.join("\n- "), 2500, "error")
-        return false;
+        activityContent.prepend(entry);
     }
 
-    return true;
-}
-async function saveBacklog(formData) {
-    try {
-      const response = await fetch(`${apiBaseUrl}/backlog/save`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(formData)
-      });
-  
-      if (!response.ok) {
-        // Handle HTTP errors
-        const errorBody = response.headers
-          .get("content-type")
-          ?.includes("application/json")
-          ? await response.json()
-          : { message: response.statusText };
-  
-        throw new Error(
-          `HTTP error! status: ${response.status}, message: ${errorBody.message}`
-        );
-      }
-  
-      const saved = await response.json();
-  
-      if (!saved) {
-        console.log("Backlog not saved");
-        return null;
-      }
-  
-      console.log("Saved backlog:", saved);
-      return saved;
-    } catch (error) {
-      console.error("Error saving backlog", error);
-    }
-  }
-  
+    /* ======================================================
+       SEARCH BAR (TASK FILTERING)
+    ======================================================= */
+    searchBar.addEventListener("keyup", function () {
+        const query = this.value.toLowerCase();
+        const items = document.querySelectorAll(".task");
 
-function resetModal() {
-    // Reset text inputs and textarea
-    titleInput.value = "";
-    descriptionInput.value = "";
-    prioritySelect.value = "medium"; // default value
+        items.forEach(item => {
+            const title = item.getAttribute("title")?.toLowerCase() || "";
 
-    // Reset required capabilities
-    tags.forEach(tag => tag.classList.remove("selected"));
-
-    // Reset requirements & acceptance criteria inputs
-    [requirementContainer, acceptanceContainer].forEach(container => {
-        // Remove all dynamic rows except the first
-        const rows = Array.from(container.querySelectorAll(".add-row"));
-        rows.forEach((row, i) => {
-            if (i === 0) {
-                // Clear the first input
-                const input = row.querySelector("input");
-                if (input) input.value = "";
+            if (title.includes(query) && title !== "example task title") {
+                item.style.display = "block";
             } else {
-                row.remove();
+                item.style.display = "none";
             }
         });
     });
 
-    // Reset GitHub project selection
-    repoCards.forEach(card => card.classList.remove("selected"));
+    /* ======================================================
+       TAG (CAPABILITY) FILTERING
+    ======================================================= */
+    tags.forEach(tag => {
+        tag.addEventListener("click", () => {
+            tag.classList.toggle("selected");
+            filterAgents();
+        });
+    });
 
-    // Reset agent selection
-    agentCards.forEach(card => card.classList.remove("selected"));
+    function filterAgents() {
+        const selected = tags
+            .filter(t => t.classList.contains("selected"))
+            .map(t => t.getAttribute("value"));
 
-    // Reset agent filtering (show all agents)
-    agentCards.forEach(card => card.style.display = "block");
-}
-function addTask(taskData) {
-    // Clone the hidden template
-    let newTaskClone = task.cloneNode(true);
+        agentCards.forEach(card => {
+            const capabilities = card.getAttribute("filter").split(",");
 
-    // Assign unique properties
-    let taskId = taskData.taskid || `task-${Date.now()}`;
-    let status = taskData.status || "toDo";
-    let userId = localStorage.getItem("userId");
-    let title = taskData.title;
-    let description = taskData.description;
-    let priority = taskData.priority;
-    let requirements = taskData.requirements;
-    let acceptCrit = taskData.acceptanceCriteria;
-    let agentId = taskData.agentId;
-    let assignedAgent = taskData.assignedAgent;
-    let repo = taskData.repo;
-    let agentProcess = taskData.agentProcess;
+            const show =
+                selected.length === 0 ||
+                selected.every(s => capabilities.includes(s));
 
-    // Set task attributes
-    newTaskClone.setAttribute("taskid", taskId);
-    newTaskClone.setAttribute("userid", userId);
-    newTaskClone.setAttribute("status", status);
-    newTaskClone.setAttribute("title", title);
-    newTaskClone.setAttribute("description", description);
-    newTaskClone.setAttribute("priority", priority);
-    newTaskClone.setAttribute("requirements", requirements);
-    newTaskClone.setAttribute("acceptCrit", acceptCrit);
-    newTaskClone.setAttribute("agentid", agentId);
-    newTaskClone.setAttribute("assignedAgent", assignedAgent);
-    newTaskClone.setAttribute("repo", repo);
-    newTaskClone.setAttribute("agentProcess", agentProcess);
-
-    // ✅ Make it draggable
-    newTaskClone.setAttribute("draggable", "true");
-
-    // Update displayed info
-    let cloneTitle = newTaskClone.querySelector(".task-title");
-    let clonePriority = newTaskClone.querySelector(".task-priority");
-    let cloneRepo = newTaskClone.querySelector(".repoSelected");
-    let cloneSelectedAgent = newTaskClone.querySelector(".agentSelected");
-
-    newTaskClone.style.display = "block";
-    cloneTitle.textContent = title;
-    clonePriority.textContent = priority;
-    cloneRepo.textContent = "Repo: " + repo;
-    cloneSelectedAgent.textContent = "Agent: " + assignedAgent;
-
-    // Find correct column
-    let cols = document.querySelectorAll(".column");
-    let selectedColumn = Array.from(cols).find(col => col.getAttribute("type") === status);
-
-    if (selectedColumn) {
-        selectedColumn.querySelector(".task-list").appendChild(newTaskClone);
+            card.style.display = show ? "flex" : "none";
+        });
     }
 
-    // ✅ Reattach drag event immediately (so it's draggable without refresh)
-    if (typeof attachDragListeners === "function") {
-        attachDragListeners();
+    /* ======================================================
+       AGENT SELECTION
+    ======================================================= */
+    agentCards.forEach(card => {
+        card.addEventListener("click", () => {
+            agentCards.forEach(c => c.classList.remove("selected"));
+            card.classList.add("selected");
+        });
+    });
+
+    /* ======================================================
+       LOAD REPOS INTO MODAL (FINAL FIXED VERSION)
+    ======================================================= */
+    function loadReposIntoModal() {
+        githubProjectsContainer.innerHTML = ""; // clear previous
+
+        repos.forEach(repoName => {
+            const card = document.createElement("div");
+            card.classList.add("repo-card");
+            card.innerHTML = `<strong value="${repoName.trim()}">${repoName.trim()}</strong>`;
+
+            card.addEventListener("click", () => {
+                repoCards.forEach(c => c.classList.remove("selected"));
+                card.classList.add("selected");
+            });
+
+            githubProjectsContainer.appendChild(card);
+        });
+
+        // refresh reference
+        repoCards = Array.from(githubProjectsContainer.querySelectorAll(".repo-card"));
+    }
+
+    /* ======================================================
+       COLLECT MODAL VALUES
+    ======================================================= */
+    function collectValues() {
+        const selectedRepoCard = modal.querySelector(".repo-card.selected strong");
+        const selectedAgent = agentCards.find(card => card.classList.contains("selected"));
+
+        return {
+            title: titleInput.value.trim(),
+            description: descriptionInput.value.trim(),
+            priority: prioritySelect.value,
+            requirements: [...requirementContainer.querySelectorAll("input")]
+                .map(i => i.value.trim())
+                .filter(Boolean),
+            acceptanceCriteria: [...acceptanceContainer.querySelectorAll("input")]
+                .map(i => i.value.trim())
+                .filter(Boolean),
+            assignedAgent: selectedAgent?.getAttribute("value") || null,
+            agentId: selectedAgent?.getAttribute("agentId") || null,
+            repo: selectedRepoCard ? selectedRepoCard.getAttribute("value") : null,
+            status: "toDo"
+        };
+    }
+
+    /* ======================================================
+       VALIDATION
+    ======================================================= */
+    function validateForm() {
+        const v = collectValues();
+        const missing = [];
+
+        if (!v.title) missing.push("Task Title");
+        if (!v.description) missing.push("Description");
+        if (!v.assignedAgent) missing.push("Assigned Agent");
+        if (!v.repo) missing.push("GitHub Project");
+        if (v.requirements.length === 0) missing.push("Requirements");
+        if (v.acceptanceCriteria.length === 0) missing.push("Acceptance Criteria");
+
+        if (missing.length > 0) {
+            alert("Missing fields:\n- " + missing.join("\n- "));
+            return false;
+        }
+        return true;
     }
 
     console.log(`🆕 Task "${title}" added to ${status} and made draggable.`);
@@ -395,34 +229,114 @@ async function intializeLogs(){
     })
 }
 intializeLogs()
+    /* ======================================================
+       SEND TO BACKEND
+    ======================================================= */
+    async function saveBacklog(formData) {
+        try {
+            const response = await fetch(`${apiBaseUrl}/backlog/save`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData)
+            });
 
-// ---- Modal controls ----
-function closeModal() {
-    modal.style.display = "none";
-}
+            return await response.json();
+        } catch (err) {
+            console.error("Error saving:", err);
+        }
+    }
 
-closeBtn.addEventListener("click", closeModal);
-cancelBtn.addEventListener("click", closeModal);
+    /* ======================================================
+       ADD TASK TO UI
+    ======================================================= */
+    function addTask(taskData) {
+        const clone = taskTemplate.cloneNode(true);
+        clone.style.display = "block";
 
-// ---- Create task ----
-createBtn.addEventListener("click", async () => {
-    if (!validateForm()) return;
-    const taskData = collectValues();
-    taskData["userId"] = localStorage.getItem("userId");
-    let savedData = await saveBacklog(taskData);
-    console.log("Task Data:", savedData);
-    addTask(savedData);
-    closeModal();
-    notify("Created a new task");
-});
+        clone.setAttribute("taskid", taskData.taskid);
+        clone.setAttribute("status", taskData.status);
+        clone.setAttribute("title", taskData.title);
+        clone.setAttribute("priority", taskData.priority);
+        clone.setAttribute("repo", taskData.repo);
+        clone.setAttribute("assignedAgent", taskData.assignedAgent);
 
-// ---- Open modal ----
-if (newBtn) {
+        clone.querySelector(".task-title").textContent = taskData.title;
+        clone.querySelector(".task-priority").textContent = taskData.priority;
+        clone.querySelector(".repoSelected").textContent = `Repo: ${taskData.repo}`;
+        clone.querySelector(".agentSelected").textContent = `Agent: ${taskData.assignedAgent}`;
+
+        document
+            .querySelector(`.column[type="${taskData.status}"] .task-list`)
+            .appendChild(clone);
+
+        if (typeof attachDragListeners === "function") {
+            attachDragListeners();
+        }
+
+        pushActivity({
+            title: taskData.title,
+            agent: taskData.assignedAgent,
+            status: "Created",
+            priority: taskData.priority,
+            repo: taskData.repo,
+            percent: 0
+        });
+    }
+
+    /* ======================================================
+       RESET MODAL
+    ======================================================= */
+    function resetModal() {
+        titleInput.value = "";
+        descriptionInput.value = "";
+        prioritySelect.value = "medium";
+        tags.forEach(t => t.classList.remove("selected"));
+        agentCards.forEach(a => a.classList.remove("selected"));
+
+        requirementContainer.querySelector("input").value = "";
+        acceptanceContainer.querySelector("input").value = "";
+
+        repoCards.forEach(r => r.classList.remove("selected"));
+    }
+
+    /* ======================================================
+       OPEN MODAL
+    ======================================================= */
     newBtn.addEventListener("click", () => {
         resetModal();
-        addNewTaskPanel.style.display = "block";
+        loadReposIntoModal();   // IMPORTANT
+        modalPanel.style.display = "block";
     });
-}
+
+    closeBtn.addEventListener("click", () => {
+        modalPanel.style.display = "none";
+    });
 
 
+});
+    cancelBtn.addEventListener("click", () => {
+        modalPanel.style.display = "none";
+    });
+
+    /* ======================================================
+       CREATE TASK
+    ======================================================= */
+    createBtn.addEventListener("click", async () => {
+        if (!validateForm()) return;
+
+        const formData = collectValues();
+        formData.userId = localStorage.getItem("userId");
+
+        const saved = await saveBacklog(formData);
+        if (saved) {
+            addTask(saved);
+        }
+
+        modalPanel.style.display = "none";
+    });
+
+    /* ======================================================
+       EXPOSE pushActivity TO dragAndDrop.js
+    ======================================================= */
+    window.pushActivity = pushActivity;
 });

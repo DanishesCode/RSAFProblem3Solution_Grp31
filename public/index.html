@@ -6,9 +6,11 @@
     <link rel="stylesheet" href="src/styles.css">
     <title>AI Agent Kanban Dashboard</title>
 </head>
+
 <body>
     <header>
         <div id="notification-container"></div>
+
         <div class="brand" onclick="location.reload()">
             <div class="logo">AI</div>
             <div>Agentic</div>
@@ -19,174 +21,175 @@
         </div>
 
         <div class="top-buttons">
-            <button class="btn-activity">Activity</button>
+            <button class="btn-activity" id="open-activity">Activity</button>
             <button class="btn-new">+ New Task</button>
         </div>
     </header>
+
     <section class="agents">
         <div class="agent">
-            <div class="agent-logo">S</div>
             <div>
-                <div>Agent Name1</div>  
+                <div>Claude</div>
                 <div class="agent-status working">Working - 45%</div>
             </div>
         </div>
+
         <div class="agent">
-            <div class="agent-logo">P</div>
             <div>
-                <div>Agent Name2</div>
+                <div>Gemini</div>
                 <div class="agent-status offline">Offline - 0%</div>
             </div>
         </div>
+
+        <div class="agent">
+            <div>
+                <div>OpenAI</div>
+                <div class="agent-status working">Working - 33%</div>
+            </div>
+        </div>
     </section>
+
     <main>
-        <div class="column" type = "toDo" ondragover="allowDrop(event)" ondrop="drop(event)">
+        <!-- TO DO COLUMN -->
+        <div class="column" type="toDo">
             <div class="column-header">To Do</div>
             <div class="task-list">
-                <div class="task" draggable="true" taskid="1" userid="123" status="toDo" title="Example Task Title" description="This is a detailed description." priority="high" requirements="Requirement 1; Requirement 2" acceptCrit="Acceptance criteria 1; Acceptance criteria 2" agentid="45" repo="node-api-server" agentProcess="Backend processing">
-                    <div class="task-title">Research dataset sources</div>
+                <!-- TEMPLATE TASK (Hidden but used for cloning) -->
+                <div class="task" draggable="true" taskid="TEMPLATE" userid="0" status="toDo"
+                    title="Example Task Title" description="This is a detailed description."
+                    priority="high" requirements="Requirement1"
+                    acceptCrit="Acceptance criteria"
+                    agentid="1" repo="node-api-server" agentProcess="Backend processing">
+
+                    <div class="task-title">Template</div>
                     <div class="task-priority">High Priority</div>
+
                     <div class="progress">
                         <div class="progress-fill" style="width: 0%"></div>
                     </div>
-                    <div class = "agentSelected">Agent: Sage</div>
-                    <div class = "repoSelected">Repo: github.com/org/repo-alpha</div>
+
+                    <div class="agentSelected">Agent: Claude</div>
+                    <div class="repoSelected">Repo: node-api-server</div>
                 </div>
             </div>
         </div>
 
-        <div class="column" type="progress" ondragover="allowDrop(event)" ondrop="drop(event)">
+        <!-- IN PROGRESS COLUMN -->
+        <div class="column" type="progress">
             <div class="column-header">In Progress</div>
-            <div class="task-list">
-                
-            </div>
+            <div class="task-list"></div>
         </div>
 
-        <div class="column" type = "review" ondragover="allowDrop(event)" ondrop="drop(event)">
+        <!-- IN REVIEW COLUMN -->
+        <div class="column" type="review">
             <div class="column-header">In Review</div>
             <div class="task-list"></div>
         </div>
 
-        <div class="column" type = "done" ondragover="allowDrop(event)" ondrop="drop(event)">
+        <!-- DONE COLUMN -->
+        <div class="column" type="done">
             <div class="column-header">Done</div>
             <div class="task-list"></div>
         </div>
 
-        <div class="column" type = "cancel" ondragover="allowDrop(event)" ondrop="drop(event)">
+        <!-- CANCELLED COLUMN -->
+        <div class="column" type="cancel">
             <div class="column-header">Cancelled</div>
             <div class="task-list"></div>
         </div>
 
-        <div id="addNewTaskPanel"><div class="modal-overlay">
-              <div class="modal">
-          
-                <div class="modal-header">
-                  <h2>Create New Task</h2>
-                  <button class="close-btn">✕</button>
+        <!-- CREATE TASK MODAL -->
+        <div id="addNewTaskPanel">
+            <div class="modal-overlay">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>Create New Task</h2>
+                        <button class="close-btn">✕</button>
+                    </div>
+
+                    <div class="modal-body">
+                        <label>Task Title</label>
+                        <input type="text" placeholder="Enter task title..." />
+
+                        <label>Description</label>
+                        <textarea placeholder="Describe the task in detail..."></textarea>
+
+                        <label>Priority</label>
+                        <select>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                            <option value="high">High</option>
+                        </select>
+
+                        <label>Required Capabilities</label>
+                        <div class="tags">
+                            <span value="frontend">frontend</span>
+                            <span value="backend">backend</span>
+                            <span value="ui-ux">ui-ux</span>
+                        </div>
+
+                        <label>Requirements</label>
+                        <div class="add-row">
+                            <input type="text" placeholder="Add a requirement..." />
+                            <button class="add-btn">+</button>
+                        </div>
+
+                        <label>Acceptance Criteria</label>
+                        <div class="add-row">
+                            <input type="text" placeholder="Add acceptance criteria..." />
+                            <button class="add-btn">+</button>
+                        </div>
+
+                        <label class="github-label">Select GitHub Project</label>
+                        <div class="github-projects"></div>
+
+                        <label class="assign-label">Assign Agent</label>
+
+                        <div class="agent-card" value="Claude" filter="backend" agentId="1">
+                            <div>
+                                <strong>Claude</strong>
+                                <p>Workload: 0% • Performance: 88%</p>
+                            </div>
+                        </div>
+
+                        <div class="agent-card" value="Gemini" filter="frontend" agentId="2">
+                            <div>
+                                <strong>Gemini</strong>
+                                <p>Workload: 0% • Performance: 95%</p>
+                            </div>
+                        </div>
+
+                        <div class="agent-card" value="OpenAi" filter="ui-ux" agentId="3">
+                            <div>
+                                <strong>OpenAi</strong>
+                                <p>Workload: 0% • Performance: 90%</p>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button class="cancel">Cancel</button>
+                            <button class="create">Create Task</button>
+                        </div>
+                    </div>
                 </div>
-          
-                <div class="modal-body">
-          
-                  <label>Task Title</label>
-                  <input type="text" placeholder="Enter task title..." />
-          
-                  <label>Description</label>
-                  <textarea placeholder="Describe the task in detail..."></textarea>
-          
-                  <div class="row">
-                    <div class="column">
-                      <label >Priority</label>
-                      <select>
-                        <option value = "medium">Medium</option>
-                        <option value = "low" >Low</option>
-                        <option value = "high">High</option>
-                      </select>
-                    </div>
-          
-                    
-                  </div>
-          
-                  <label>Required Capabilities</label>
-                  <div class="tags">
-                    <span value = "frontend">frontend</span>
-                    <span  value = "backend">backend</span>
-                    <span value = "ui-ux">ui-ux</span>
-                  </div>
-          
-                  <label>Requirements</label>
-                  <div class="add-row">
-                    <input type="text" placeholder="Add a requirement..." />
-                  </div>
-          
-                  <label>Acceptance Criteria</label>
-                  <div class="add-row">
-                    <input type="text" placeholder="Add acceptance criteria..." />
-                  </div>
-          
-                  <label class="github-label">Select GitHub Project</label>
-          
-                  <div class="github-projects">
-                    <div class="repo-card">
-                      <strong value = "node-api-server">node-api-server</strong>
-                    </div>
-          
-                  </div>
-          
-                  <label class="assign-label">Assign Agent</label>
-          
-                  <div class="agent-card" value = "Claude" filter = "backend" agentId = "1">
-                    <div >
-                      <strong>Claude</strong>
-                      <p>Workload: 0% • Performance: 88%</p>
-                    </div>
-                    <span class="badge">1/1 match</span>
-                  </div>
-          
-                  <div class="agent-card" value = "Gemini" filter = "frontend" agentId = "2">
-                    <div>
-                      <strong>Gemini</strong>
-                      <p>Workload: 0% • Performance: 95%</p>
-                    </div>
-                    
-                    <span class="badge">1/1 match</span>
-                  </div>
-          
-                  <div class="agent-card" value = "OpenAi" filter = "ui-ux" agentId = "3">
-                    <div>
-                      <strong>OpenAi</strong>
-                      <p>Workload: 0% • Performance: 90%</p>
-                    </div>
-                    <span class="badge">1/1 match</span>
-                  </div>
-          
-          
-                <div class="modal-footer">
-                  <button class="cancel">Cancel</button>
-                  <button class="create">Create Task</button>
-                </div>
-          <div id="confirmationPanel" class="modal-overlay" style="display: none;">
-    <div class="modal">
-        <div class="modal-header">
-            <h2 id="confirmationHeader">Confirm Status Change</h2>
-            <button class="close-btn" onclick="closeConfirmationModal()">×</button>
-        </div>
-        <div class="modal-body">
-            <p id="confirmationMessage">Are you sure you want to move the task?</p>
-            <div id="confirmationDetails"></div>
-        </div>
-        <div class="modal-footer">
-            <button class="cancel" onclick="closeConfirmationModal()">Cancel</button>
-            <button class="create" id="confirmMoveBtn">Confirm</button>
-        </div>
-    </div>
-</div>
-              </div>
             </div>
-          </div>
-          
+        </div>
+
+        <!-- ACTIVITY SIDEBAR -->
+        <div id="activity-sidebar" class="activity-sidebar">
+            <div class="activity-header">
+                <h2>Live Activity</h2>
+                <button id="close-activity">✕</button>
+            </div>
+
+            <div id="activity-content" class="activity-content">
+                <!-- Events will be injected here -->
+            </div>
+        </div>
 
     </main>
-    <script src="dragAndDrop.js"></script>    
+
     <script src="src/script.js"></script>
+    <script src="dragAndDrop.js"></script>
 </body>
 </html>

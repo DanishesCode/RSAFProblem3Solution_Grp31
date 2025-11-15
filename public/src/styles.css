@@ -323,7 +323,6 @@ main {
   
   /* Repo card */
   .repo-card {
-    display:none;
     padding: 10px;
     border-radius: 8px;
     border: 1px solid #e6e6e6;
@@ -499,3 +498,60 @@ main {
     border-left: 4px solid #e74c3c;
   }
       
+
+.activity-sidebar {
+    position: fixed;
+    top: 0;
+    right: -380px;   /* HIDDEN by default */
+    width: 380px;
+    height: 100vh;
+    background: var(--sidebar-bg);
+    border-left: 1px solid var(--sidebar-border);
+    box-shadow: -4px 0 12px var(--sidebar-shadow);
+    z-index: 9998;
+    transition: right 0.35s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.activity-sidebar.open {
+    right: 0;
+}
+
+.activity-header {
+    padding: 18px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--sidebar-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.activity-content {
+    padding: 15px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.activity-entry {
+    padding: 12px;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+    background: #fafafa;
+    margin-bottom: 12px;
+}
+
+.activity-entry-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.activity-entry small {
+    font-size: 12px;
+    color: #666;
+}
+
+.activity-entry p {
+    margin-top: 6px;
+    font-size: 13px;
+}
