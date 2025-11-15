@@ -64,6 +64,8 @@ app.get("/dashboard", (req, res) => {
 //github login Routes
 app.get("/github", githubController.githubRedirect);
 app.get("/github/callback", githubController.githubCallback);
+//get all backlogs
+app.get("/backlog/getUserLogs",taskController.getBacklogsByUser);
 
 //Post functions
 //save tasks

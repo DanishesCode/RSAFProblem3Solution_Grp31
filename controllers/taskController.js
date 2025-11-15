@@ -1,4 +1,4 @@
-const { createBacklogItem, updateBacklogItemStatus } = require("../models/taskModel");
+const { createBacklogItem, updateBacklogItemStatus,getBacklogsByUserId } = require("../models/taskModel");
 const createBacklog = async (req, res) => {
   try {
     const data = await createBacklogItem(req.body);
@@ -22,8 +22,27 @@ const updateStatus = async (req, res) => {
     res.status(500).send("Failed to update backlog item status");
   }
 };
+const getBacklogsByUser = async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).send("Missing userId in request.");
+    }
+
+    const data = await getBacklogsByUserId(userId);
+
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Failed to retrieve user backlogs");
+  }
+};
+
+
 
 module.exports = {
   createBacklog,
   updateStatus, 
+  getBacklogsByUser
 };
