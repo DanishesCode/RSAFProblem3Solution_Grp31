@@ -198,9 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return true;
     }
 
-    console.log(`🆕 Task "${title}" added to ${status} and made draggable.`);
-    return newTaskClone
-}
+
 //get logs
 const getBacklogsByUser = async (req, res) => {
     try {
@@ -313,10 +311,7 @@ intializeLogs()
     });
 
 
-});
-    cancelBtn.addEventListener("click", () => {
-        modalPanel.style.display = "none";
-    });
+
 
     /* ======================================================
        CREATE TASK
