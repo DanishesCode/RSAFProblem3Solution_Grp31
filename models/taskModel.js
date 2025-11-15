@@ -99,10 +99,45 @@ async function updateBacklogItemStatus(taskId, status) {
         }
     }
 }
+async function getBacklogsByUserId(userId) {
+  let connection;
+  try {
+      connection = await sql.connect(dbConfig);
+
+      const query = `
+          SELECT b.*, a.agentName, a.agentSpecial
+          FROM Backlog b
+          JOIN AgentFilter a ON b.agentId = a.agentId
+          WHERE b.userId = @userId;
+      `;
+
+      const request = connection.request();
+
+      request.input("userId", sql.Int, parseInt(userId));
+
+      const result = await request.query(query);
+
+      return result.recordset;   // return all backlog rows
+  } catch (error) {
+      console.error("Database error retrieving backlogs:", error);
+      throw error;
+  } finally {
+      if (connection) {
+          try {
+              await connection.close();
+          } catch (closeError) {
+              console.error("Error closing connection:", closeError);
+          }
+      }
+  }
+}
+
 
 module.exports = {
     createBacklogItem,
-    updateBacklogItemStatus // Export the new function
+    updateBacklogItemStatus,// Export the new function
+    getBacklogsByUserId
+
 };
 
     
