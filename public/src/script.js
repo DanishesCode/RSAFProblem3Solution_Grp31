@@ -365,9 +365,36 @@ function addTask(taskData) {
     }
 
     console.log(`🆕 Task "${title}" added to ${status} and made draggable.`);
+    return newTaskClone
 }
-
-
+//get logs
+const getBacklogsByUser = async (req, res) => {
+    try {
+      const { userId } = req.query; // GET /backlog/getUserLogs?userId=1
+  
+      if (!userId) {
+        return res.status(400).send("Missing userId in request.");
+      }
+  
+      const data = await getBacklogsByUserId(userId);
+  
+      res.json(data);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Failed to retrieve user backlogs");
+    }
+  };
+  
+//initialize logs
+async function intializeLogs(){
+    let userId = localStorage.getItem("userId");
+    const logs = await fetch(`/backlog/getUserLogs?userId=${userId}`)
+                    .then(res => res.json());
+    logs.forEach(function(data){
+        addTask(data);
+    })
+}
+intializeLogs()
 
 // ---- Modal controls ----
 function closeModal() {
@@ -396,5 +423,6 @@ if (newBtn) {
         addNewTaskPanel.style.display = "block";
     });
 }
+
 
 });
