@@ -130,3 +130,127 @@ body {
     cursor: pointer;
     margin: auto auto;
   }
+  .filter-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh; /* full viewport height */
+    background: linear-gradient(180deg, #f5e9d3 0%, #d8c0a1 100%);
+    padding: 25px 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', sans-serif;
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    overflow: hidden; /* sidebar itself doesn’t scroll */
+  }
+  
+  /* Close button */
+  .filter-sidebar .close-btn {
+    align-self: flex-end;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 22px;
+    color: #7a5a3d;
+    transition: color 0.2s;
+  }
+  
+  .filter-sidebar .close-btn:hover {
+    color: #000;
+  }
+  
+  /* Section headers */
+  .filter-sidebar h3 {
+    margin: 15px 0 10px 0;
+    font-weight: 700;
+    color: #5b3d23;
+    font-size: 16px;
+  }
+  
+  /* Filter sections */
+  .filter-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* Scrollable repository list */
+  .scrollable {
+    max-height: 140px; /* only repository buttons scroll */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 5px;
+  }
+  
+  /* Search input */
+  .filter-section input[type="text"] {
+    width: 90%;
+    padding: 6px 12px;
+    margin-bottom: 10px;
+    border-radius: 25px;
+    border: 1px solid #d2bfa1;
+    outline: none;
+    font-size: 14px;
+    background-color: #fff8f0;
+    transition: all 0.2s;
+  }
+  
+  .filter-section input[type="text"]:focus {
+    border-color: #a67c52;
+    box-shadow: 0 0 5px rgba(166, 124, 82, 0.5);
+  }
+  
+  /* Placeholder buttons (Repository / AI / Priority) */
+  .filter-section button {
+    width: 100%;
+    padding: 12px 15px;
+    border: none;
+    border-radius: 12px;
+    background-color: #fff;
+    cursor: pointer;
+    font-weight: bold;
+    text-align: left;
+    color: #5b3d23;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s;
+  }
+  
+  /* Extra gap for AI & Priority buttons */
+  .filter-section.ai-agent-buttons button,
+  .filter-section.priority-buttons button {
+    margin-bottom: 12px;
+  }
+  
+  .filter-section button:hover {
+    background-color: #f3e4d2;
+    transform: translateX(3px);
+  }
+  
+  /* Apply button smaller, narrower, and pinned at bottom */
+  .apply-btn {
+    margin-top: auto; /* pushes it to bottom */
+    padding: 8px 12px; /* smaller than placeholders */
+    width: 80%; /* narrower than sidebar */
+    align-self: center; /* center horizontally */
+    background: linear-gradient(90deg, #76c043, #4cae28);
+    border: none;
+    border-radius: 12px;
+    font-weight: bold;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s;
+  }
+  
+  .apply-btn:hover {
+    background: linear-gradient(90deg, #4cae28, #76c043);
+    transform: translateY(-1px);
+  }
+  
