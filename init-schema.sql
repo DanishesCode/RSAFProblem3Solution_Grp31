@@ -1,5 +1,6 @@
 create table Login (
-userId INT Identity(1,1) Primary Key
+userId INT Identity(1,1) Primary Key,
+githubId BIGINT NOT NULL UNIQUE
 )
 
 create table AgentFilter(
@@ -14,7 +15,7 @@ userId INT NOT NULL,
 status varchar(240) CHECK (status IN ('toDo', 'progress', 'review', 'done', 'cancel')) ,
 title varchar(255) NOT NULL,
 description nvarchar(max),
-priority varchar(10) CHECK (priority IN('low', 'medium', 'high')),
+priority varchar(10),
 requirements nvarchar(max),
 acceptCrit nvarchar(max),
 agentId INT NOT NULL,
@@ -24,4 +25,8 @@ agentProcess varchar(max)
 FOREIGN KEY (userId) References Login(userId),
 FOREIGN KEY (agentId) References AgentFilter(agentId)
 )
+  
+SET Identity_Insert AgentFilter ON
+insert into AgentFilter (agentId,agentName, agentSpecial)
 
+Values( '1', 'Claude','backend'), ('2', 'Gemini','frontend'), ('3', 'OpenAi', 'ui-ux');

@@ -6,6 +6,34 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "mssql": "^12.0.0",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "name": "rsafproblem3solution_grp31",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "server": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DanishesCode/RSAFProblem3Solution_Grp31.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DanishesCode/RSAFProblem3Solution_Grp31/issues"
+  },
+  "homepage": "https://github.com/DanishesCode/RSAFProblem3Solution_Grp31#readme",
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
+    "vite": "^7.2.2"
   }
 }
