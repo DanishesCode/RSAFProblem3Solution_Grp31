@@ -359,9 +359,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return true;
     }
 
-
-
-
     
     //initialize logs
     async function intializeLogs(){
@@ -758,6 +755,9 @@ function addTask(taskData) {
         
         // open modal prefilling fields
         openEditModal(taskEl);
+    });
+    document.getElementById("open-dashboard").addEventListener("click", () => {
+        window.location.href = "../dashboard/dashboard.html"
     });
 
     /* ======================================================

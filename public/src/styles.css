@@ -680,3 +680,18 @@ main {
 .agent-status.red {
     color: #e63946; /* red */
 }
+.btn-dashboard {
+  padding: 6px 12px;           /* same as Filter button */
+  margin-left: 8px;             /* spacing between buttons */
+  background-color: #c9b59c;    /* dark theme color matching dashboard */
+  color: #fff;                  /* white text */
+  border: 1px solid #c9b59c;       /* same border style as Filter button */
+  border-radius: 4px;           /* rounded corners */
+  font-size: 14px;              /* same font size as Filter button */
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-dashboard:hover {
+  background-color: #c9b59c;    /* slightly lighter on hover */
+}
