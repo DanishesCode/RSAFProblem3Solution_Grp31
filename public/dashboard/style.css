@@ -63,6 +63,7 @@ body {
     padding-left: 450px;
     transform: translate(-50%, -50%);
     text-align: center;
+    z-index: -1; 
   }
   
   .center-label .count {
@@ -139,7 +140,7 @@ body {
     background: linear-gradient(180deg, #f5e9d3 0%, #d8c0a1 100%);
     padding: 25px 20px;
     box-sizing: border-box;
-    display: flex;
+    display: none;
     flex-direction: column;
     justify-content: flex-start;
     box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
@@ -252,5 +253,25 @@ body {
   .apply-btn:hover {
     background: linear-gradient(90deg, #4cae28, #76c043);
     transform: translateY(-1px);
+  }
+  /* Hidden state (default) */
+.filter-sidebar {
+    transform: translateX(-100%);
+    opacity: 0;
+    transition: transform 0.35s ease-out, opacity 0.35s ease-out;
+  }
+  
+  /* When opened */
+  .filter-sidebar.open {
+    display: flex;        /* your existing flex layout */
+    transform: translateX(0);
+    opacity: 1;
+  }
+  /* Highlight selected filter buttons */
+.filter-section button.selected {
+    background-color: #1d27da;  /* active color */
+    color: white;               /* text color when active */
+    border: 1px solid #1d27da;  /* optional */
+    font-weight: bold;           /* optional */
   }
   
