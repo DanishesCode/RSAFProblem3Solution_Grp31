@@ -1,10 +1,10 @@
-@import "https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&display=swap";
+@import url('https://fonts.googleapis.com/css2?family=Chivo+Mono:ital,wght@0,100..900;1,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
 :root {
     --bg1: #F9F8F6;
     --panel: #EFE9E3;
     --muted: #D9CFC7;
     --accent: #C9B59C;
-    --font: 'Roboto Mono', monospace;
+    --font: 'Montserrat', sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -41,11 +41,13 @@ header {
 }
 
 .search-bar {
-    flex: 1;
     display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
     justify-content: center;
+    position: relative;
 }
-
 .search-bar input {
     width: 50%;
     padding: 8px 10px;
@@ -143,9 +145,12 @@ main {
     padding: 10px;
     margin-bottom: 10px;
     font-size: 14px;
+    cursor: pointer;
 }
 
-.task-title { font-weight: bold; }
+.task-title { 
+  font-weight: bold; 
+}
 
 .task-priority {
     font-size: 12px;
@@ -198,7 +203,6 @@ main {
     border-radius: 12px;
     box-shadow: 0px 4px 25px rgba(0, 0, 0, 0.15);
     animation: fadeIn 0.2s ease-in-out;
-    font-family: Arial, sans-serif;
   
     display: flex;
     flex-direction: column;
@@ -423,12 +427,25 @@ main {
 }
 
   
-  /* ===== Animations ===== */
-  @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-  }
-  /* Container for stacking notifications */
+#createBtn.save,
+#createBtn.create.save {
+  background: #61b464 !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 8px 14px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+}
+
+#createBtn.save:hover {
+  background: #5a975d !important;
+}
+
+/* ===== Animations ===== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
 #notification-container {
     position: fixed;
     bottom: 20px;
@@ -502,7 +519,7 @@ main {
 .activity-sidebar {
     position: fixed;
     top: 0;
-    right: -380px;   /* HIDDEN by default */
+    right: -380px;
     width: 380px;
     height: 100vh;
     background: var(--sidebar-bg);
@@ -554,4 +571,112 @@ main {
 .activity-entry p {
     margin-top: 6px;
     font-size: 13px;
+}
+
+/* FILTER PANEL STYLES */
+.btn-filter {
+  font-family: var(--font);
+  background: var(--muted);
+  border: 1px solid #e6e6e6;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* -- Filter panel polish -- */
+.filter-panel {
+  position: absolute;
+  right: 245px;
+  top: 64px;
+  width: 320px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(16,24,40,0.18);
+  z-index: 1200;
+  padding: 12px;
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+}
+.filter-panel.hidden { display: none; }
+
+.filter-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f3f3f3;
+}
+.filter-header strong { font-size: 15px; }
+.close-filter {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #666;
+}
+
+/* content area scroll for long lists */
+.filter-panel-inner {
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  max-height: 360px;
+}
+.filter-section {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:6px 2px;
+}
+.filter-section-title { font-size:13px; color:#555; margin-bottom:4px; }
+
+/* checkbox list area */
+#filter-repos, #filter-agents {
+  max-height: 120px;
+  overflow-y: auto;
+  padding-right: 6px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.filter-panel label {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  color:#333;
+}
+
+/* Clear button aligned to right */
+.filter-actions {
+  display:flex;
+  justify-content:flex-end;
+}
+.filter-clear {
+  background: transparent;
+  border: 1px solid #ddd;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size:13px;
+}
+
+/* responsive tweaks */
+@media (max-width: 880px) {
+  .search-bar input { max-width: 320px; }
+  .filter-panel { right: 12px; width: 90%; top: 72px; }
+}
+
+.agent-status.green {
+    color: #3cb371; /* green */
+}
+.agent-status.yellow {
+    color: #e6a700; /* yellow */
+}
+.agent-status.red {
+    color: #e63946; /* red */
 }

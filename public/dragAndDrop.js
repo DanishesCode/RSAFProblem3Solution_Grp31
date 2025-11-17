@@ -1,6 +1,3 @@
-/* ------------------------------------------------------
-   DRAG & DROP + PROGRESS + ACTIVITY LOGGING
------------------------------------------------------- */
 
 /* -------------- BACKEND UPDATE -------------- */
 async function updateTaskStatus(taskId, newStatus) {
@@ -148,6 +145,9 @@ function moveTaskToColumn(task, newStatus) {
 
     updateTaskStatus(id, newStatus);
     handleProgressChange(task, newStatus);
+
+    // IMPORTANT FIX
+    updateAgentWorkload();
 }
 
 /* -------------- DRAG EVENTS -------------- */
@@ -173,7 +173,7 @@ function dragLeave(ev) {
 
 function drop(ev) {
     ev.preventDefault();
-
+ 
     const id = ev.dataTransfer.getData("text/plain");
     const task = document.querySelector(`.task[taskid="${id}"]`);
     if (!task) return;
@@ -192,6 +192,22 @@ function drop(ev) {
         console.warn(`❌ INVALID MOVE: ${oldStatus} → ${newStatus}`);
         return;
     }
+    if (newStatus === "progress") {
+    const agentId = task.getAttribute("agentid") || task.getAttribute("agentId");
+    if (agentId) {
+        // Count tasks in progress with same agent
+        const count = document.querySelectorAll(
+            `.column[type="progress"] .task[agentid="${agentId}"], 
+             .column[type="progress"] .task[agentId="${agentId}"]`
+        ).length;
+
+        if (count >= 5) {
+            showError(`Agent ${task.querySelector(".agentSelected").textContent.replace("Agent: ", "")} already has 5 tasks in progress and cannot take more.`);
+            return; // ❌ stop the drop
+        }
+    }
+}
+
 
     const list = col.querySelector(".task-list");
     list.appendChild(task);
@@ -200,6 +216,7 @@ function drop(ev) {
 
     updateTaskStatus(id, newStatus);
     handleProgressChange(task, newStatus);
+    updateAgentWorkload();
 }
 
 /* -------------- INIT -------------- */
@@ -220,3 +237,54 @@ document.addEventListener("DOMContentLoaded", () => {
         col.addEventListener("dragleave", dragLeave);
     });
 });
+
+function showError(message) {
+    const container = document.getElementById("notification-container");
+    if (!container) {
+        alert(message);
+        return;
+    }
+
+    const box = document.createElement("div");
+    box.className = "notification error";
+    box.textContent = message;
+
+    container.appendChild(box);
+
+    setTimeout(() => {
+        box.classList.add("fade");
+        setTimeout(() => box.remove(), 300);
+    }, 2000);
+}
+
+function updateAgentWorkload() {
+    const agentWork = { 1: 0, 2: 0, 3: 0 };
+
+    // Count ONLY tasks in progress
+    document.querySelectorAll('.column[type="progress"] .task').forEach(task => {
+        let agentId =
+            task.getAttribute("agentId") ||
+            task.getAttribute("agentid"); // <--- FIXED
+
+        if (!agentId) return;
+        if (!agentWork.hasOwnProperty(agentId)) return;
+
+        agentWork[agentId] += 20;
+    });
+
+    // Update UI
+    document.querySelectorAll(".agents .agent").forEach((agentEl, index) => {
+        const id = (index + 1).toString();
+        const percent = agentWork[id];
+
+        const status = agentEl.querySelector(".agent-status");
+        status.textContent = `Working - ${percent}%`;
+
+        status.classList.remove("green", "yellow", "red");
+
+        if (percent === 0)       status.classList.add("green");
+        else if (percent <= 40) status.classList.add("green");
+        else if (percent <= 80) status.classList.add("yellow");
+        else                    status.classList.add("red");
+    });
+}
