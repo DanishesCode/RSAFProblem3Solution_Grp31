@@ -7,6 +7,8 @@ const cors = require("cors");
 const passport = require("passport");
 const githubController = require("./controllers/githubController");
 const taskController = require("./controllers/taskController");
+const GeminiController = require('./controllers/geminiController');
+const WebSocket = require("ws");
 
 
 // Load environment variables FIRST
@@ -74,6 +76,11 @@ app.post("/backlog/save",taskController.createBacklog)
 //Put Functions
 //Update task Status
 app.put("/backlog/status-update", taskController.updateStatus); 
+
+//gemini 
+app.post('/ai/gemini', GeminiController.generateResponse);
+
+
 
 // Start server
 app.listen(port, async () => {
