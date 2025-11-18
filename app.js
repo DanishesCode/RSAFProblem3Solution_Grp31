@@ -78,7 +78,8 @@ app.post("/backlog/save",taskController.createBacklog)
 app.put("/backlog/status-update", taskController.updateStatus); 
 
 //gemini 
-app.post('/ai/gemini', GeminiController.generateResponse);
+app.post('/ai/gemini/generate', GeminiController.generateResponse);
+app.post('/ai/gemini/stream', GeminiController.streamResponse);
 
 
 
