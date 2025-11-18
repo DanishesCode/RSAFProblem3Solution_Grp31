@@ -34,6 +34,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const addRows = modal.querySelectorAll(".modal-body .add-row");
     const requirementContainer = modal.querySelector("#requirements-container");
     const acceptanceContainer = modal.querySelector("#acceptance-container");
+
+    
     // Fallback: if structure differs, manually find by label proximity
     if (!requirementContainer || !acceptanceContainer) {
         const labels = Array.from(modal.querySelectorAll("label"));
@@ -576,8 +578,8 @@ function addTask(taskData) {
             editingTaskElement.setAttribute("priority", values.priority);
             editingTaskElement.setAttribute("assignedAgent", values.assignedAgent || "");
             editingTaskElement.setAttribute("repo", values.repo || "");
-            editingTaskElement.setAttribute("requirements", JSON.stringify(values.requirements || []));
-            editingTaskElement.setAttribute("acceptCrit", JSON.stringify(values.acceptanceCriteria || []));
+            editingTaskElement.setAttribute("requirements", JSON.stringify(values.requirements ));
+            editingTaskElement.setAttribute("acceptCrit", JSON.stringify(values.acceptanceCriteria ));
 
             // update visible fields
             const tt = editingTaskElement.querySelector(".task-title");
