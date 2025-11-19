@@ -6,8 +6,8 @@ const dbConfig = {
     server: process.env.DB_SERVER,
     database: process.env.DB_DATABASE,
     options: {
-        encrypt: false,                  // false for local dev
-        trustServerCertificate: true,    // must be inside options
+        encrypt: false,              
+        trustServerCertificate: true,
         port: parseInt(process.env.DB_PORT) || 1433,
         connectionTimeout: 60000
     }

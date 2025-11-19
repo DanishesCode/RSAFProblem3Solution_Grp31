@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -209,7 +209,161 @@
             <div id="activity-content" class="activity-content">
                 <!-- Events will be injected here -->
             </div>
-        </div>     
+        </div>
+
+        <!-- REVIEW MODAL -->
+        <div id="reviewModal" class="review-modal" style="display: none;">
+            <div class="review-modal-content">
+                <div class="review-modal-header">
+                    <span class="review-close">&times;</span>
+                    <h3 id="review-task-title"></h3>
+                    <div id="review-priority-badge" class="priority-badge"></div>
+                </div>
+                
+                <div class="review-modal-body">
+                    <div class="review-section">
+                        <label>Prompt used:</label>
+                        <div class="prompt-box" id="review-prompt"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Acceptance</label>
+                        <div class="acceptance-box" id="review-acceptance"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Appended Code</label>
+                        <button class="repo-link" id="review-repo-link">
+                            📁 <span id="review-repo-name"></span>
+                            <span class="expand-icon">⤢</span>
+                        </button>
+                        <div class="code-info" id="review-code-changes"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label id="review-progress-label">Progress: 0%</label>
+                        <div class="progress-bar">
+                            <div class="progress-fill-modal" id="review-progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Assigned AI Agent</label>
+                        <div class="agent-info">
+                            <div class="agent-icon">🤖</div>
+                            <div class="agent-details">
+                                <div class="agent-name" id="review-agent-name"></div>
+                                <div class="agent-status-modal" id="review-agent-status"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="review-modal-footer">
+                    <button class="btn-try-again" id="review-retry">Try Again</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DONE MODAL (View only, no buttons) -->
+        <div id="doneModal" class="review-modal" style="display: none;">
+            <div class="review-modal-content">
+                <div class="review-modal-header">
+                    <span class="done-close">&times;</span>
+                    <h3 id="done-task-title"></h3>
+                    <div id="done-priority-badge" class="priority-badge"></div>
+                </div>
+                
+                <div class="review-modal-body">
+                    <div class="review-section">
+                        <label>Prompt used:</label>
+                        <div class="prompt-box" id="done-prompt"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Acceptance</label>
+                        <div class="acceptance-box" id="done-acceptance"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Appended Code</label>
+                        <button class="repo-link" id="done-repo-link">
+                            📁 <span id="done-repo-name"></span>
+                            <span class="expand-icon">⤢</span>
+                        </button>
+                        <div class="code-info" id="done-code-changes"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label id="done-progress-label">Progress: 0%</label>
+                        <div class="progress-bar">
+                            <div class="progress-fill-modal" id="done-progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Assigned AI Agent</label>
+                        <div class="agent-info">
+                            <div class="agent-icon">🤖</div>
+                            <div class="agent-details">
+                                <div class="agent-name" id="done-agent-name"></div>
+                                <div class="agent-status-modal" id="done-agent-status"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CANCELLED MODAL (View only, no buttons) -->
+        <div id="cancelledModal" class="review-modal" style="display: none;">
+            <div class="review-modal-content">
+                <div class="review-modal-header">
+                    <span class="cancelled-close">&times;</span>
+                    <h3 id="cancelled-task-title"></h3>
+                    <div id="cancelled-priority-badge" class="priority-badge"></div>
+                </div>
+                
+                <div class="review-modal-body">
+                    <div class="review-section">
+                        <label>Prompt used:</label>
+                        <div class="prompt-box" id="cancelled-prompt"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Acceptance</label>
+                        <div class="acceptance-box" id="cancelled-acceptance"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Appended Code</label>
+                        <button class="repo-link" id="cancelled-repo-link">
+                            📁 <span id="cancelled-repo-name"></span>
+                            <span class="expand-icon">⤢</span>
+                        </button>
+                        <div class="code-info" id="cancelled-code-changes"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label id="cancelled-progress-label">Progress: 0%</label>
+                        <div class="progress-bar">
+                            <div class="progress-fill-modal" id="cancelled-progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Assigned AI Agent</label>
+                        <div class="agent-info">
+                            <div class="agent-icon">🤖</div>
+                            <div class="agent-details">
+                                <div class="agent-name" id="cancelled-agent-name"></div>
+                                <div class="agent-status-modal" id="cancelled-agent-status"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script src="src/script.js"></script>
