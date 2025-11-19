@@ -4,18 +4,24 @@ const dotenv = require('dotenv');
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const passport = require("passport");
 
-// Load environment variables FIRST
+const githubController = require("./controllers/githubController");
+const taskController = require("./controllers/taskController");
+const GeminiController = require('./controllers/geminiController');
+const OpenAIController = require('./controllers/openaiController');
+
+// Load env BEFORE db config
 dotenv.config();
 
-// Import dbConfig AFTER loading environment variables
-const dbConfig = require("./dbconfig.js");
+// dbConfig AFTER dotenv
+const { dbConfig } = require('./dbConfig');
 
-
-// Create Express app
+// Initialize app
 const app = express();
 const port = process.env.PORT || 3000;
-// Custom CORS middleware MUST be first to ensure headers are set for all requests
+
+// --- CORS (must be first) ---
 app.use(cors({
     origin: [
         'http://localhost:5500',
@@ -27,45 +33,74 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
 
-
-// Serve static files
+// Static files
 app.use(express.static(path.join(__dirname, 'public')));
-// Serve uploaded images at /uploads
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
-// Serve MVC files for browser-side loading
+// MVC folder exposure
 app.use('/middlewares', express.static(path.join(__dirname, 'middlewares')));
 app.use('/models', express.static(path.join(__dirname, 'models')));
 app.use('/controllers', express.static(path.join(__dirname, 'controllers')));
 
+// ---------------- ROUTES ----------------
 
+// Login pages
+app.get("/login", (req, res) =>
+    res.sendFile(path.join(__dirname, "public/login/login.html"))
+);
 
+// Dashboard
+app.get("/dashboard", (req, res) => {
+    if (!req.isAuthenticated()) return res.redirect("/login");
+    res.send(`
+        <h1>Welcome, ${req.user.displayName || req.user.username}</h1>
+        <img src="${req.user.photo}" width="100"/><br>
+        <a href="/logout">Logout</a>
+    `);
+});
 
+// ----- GitHub OAuth -----
+app.get("/github", githubController.githubRedirect);
+app.get("/github/callback", githubController.githubCallback);
 
+// ----- Backlogs -----
+app.get("/backlog/getUserLogs", taskController.getBacklogsByUser);
+app.post("/backlog/save", taskController.createBacklog);
+app.put("/backlog/status-update", taskController.updateStatus);
 
+// ----- GEMINI API -----
+app.post('/ai/gemini/generate', GeminiController.generateResponse);
+app.post('/ai/gemini/stream', GeminiController.streamResponse);
 
+// ----- CHATGPT / OPENAI API -----
+app.post('/ai/openai/generate', OpenAIController.generateResponse);
+app.post('/ai/openai/stream', OpenAIController.streamResponse);
+
+// -------------------------------------------------------------
 
 // Start server
 app.listen(port, async () => {
     try {
         await sql.connect(dbConfig);
         console.log("Database connected");
-                
     } catch (err) {
         console.error("DB connection error:", err);
         process.exit(1);
     }
+
     console.log(`Server running on port ${port}`);
 });
 
 // Graceful shutdown
 process.on("SIGINT", async () => {
-    console.log("Server is gracefully shutting down");
+    console.log("Shutting down server...");
     await sql.close();
-    console.log("Database connections closed");
+    console.log("DB closed");
     process.exit(0);
 });
+
+module.exports = app;

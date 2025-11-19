@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/src/styles.css">
+    <link rel="stylesheet" href="src/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
     <title>AI Agent Kanban Dashboard</title>
 </head>
+
 <body>
     <header>
+        <div id="notification-container"></div>
+
         <div class="brand" onclick="location.reload()">
             <div class="logo">AI</div>
             <div>Agentic</div>
@@ -15,189 +19,203 @@
 
         <div class="search-bar">
             <input type="text" placeholder="Search tasks...">
+            <div class="search-actions">
+                <button class="btn-filter" id="open-filter">Filter</button>
+                <button class="btn-dashboard" id="open-dashboard">Dashboard</button>
+            </div>
+            
+        </div>
+
+        <!-- FILTER PANEL DROPDOWN -->
+        <div id="filterPanel" class="filter-panel hidden" aria-hidden="true">
+            <div class="filter-panel-inner">
+                <div class="filter-header">
+                    <strong>Filter Tasks</strong>
+                    <button id="close-filter" class="close-filter">✕</button>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-section-title">Repository</div>
+                    <div id="filter-repos"></div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-section-title">Agent</div>
+                    <div id="filter-agents"></div>
+                </div>
+
+                <div class="filter-actions">
+                    <button id="clear-filters" class="filter-clear">Clear</button>
+                </div>
+            </div>
         </div>
 
         <div class="top-buttons">
-            <button class="btn-activity">Activity</button>
+            <button class="btn-activity" id="open-activity">Activity</button>
             <button class="btn-new">+ New Task</button>
         </div>
     </header>
+
     <section class="agents">
         <div class="agent">
-            <div class="agent-logo">S</div>
             <div>
-                <div>Agent Name1</div>
-                <div class="agent-status working">Working - 45%</div>
+                <div>Claude</div>
+                <div class="agent-status working">Working - 0%</div>
             </div>
         </div>
+
         <div class="agent">
-            <div class="agent-logo">P</div>
             <div>
-                <div>Agent Name2</div>
-                <div class="agent-status offline">Offline - 0%</div>
+                <div>Gemini</div>
+                <div class="agent-status offline">Working - 0%</div>
+            </div>
+        </div>
+
+        <div class="agent">
+            <div>
+                <div>OpenAI</div>
+                <div class="agent-status working">Working - 0%</div>
             </div>
         </div>
     </section>
+
     <main>
-        <div class="column">
+        <!-- TO DO COLUMN -->
+        <div class="column" type="toDo">
             <div class="column-header">To Do</div>
-            <div class="task-list" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
-                <div class="task" draggable="true" ondragstart="handleDragStart(event)">
-                    <div class="task-title">Research dataset sources</div>
-                    <div class="task-priority high">High Priority</div>
+            <div class="task-list">
+                <!-- TEMPLATE TASK (Hidden but used for cloning) -->
+                <div class="task" draggable="true" taskid="TEMPLATE" userid="0" status="toDo"
+                    title="Example Task Title" description="This is a detailed description."
+                    priority="high" requirements="Requirement1"
+                    acceptCrit="Acceptance criteria"
+                    agentid="1" repo="node-api-server" agentProcess="Backend processing">
+
+                    <div class="task-title">Template</div>
+                    <div class="task-priority">High Priority</div>
+
                     <div class="progress">
-                        <div class="progress-fill" style="width: 20%"></div>
+                        <div class="progress-fill" style="width: 0%"></div>
                     </div>
-                    <div>Agent: Sage</div>
-                    <div>Repo: github.com/org/repo-alpha</div>
+
+                    <div class="agentSelected">Agent: Claude</div>
+                    <div class="repoSelected">Repo: node-api-server</div>
                 </div>
             </div>
         </div>
 
-        <div class="column">
+        <!-- IN PROGRESS COLUMN -->
+        <div class="column" type="progress">
             <div class="column-header">In Progress</div>
-            <div class="task-list" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
-                <div class="task" draggable="true" ondragstart="handleDragStart(event)">
-                    <div class="task-title">Train evaluation model</div>
-                    <div class="task-priority high">High Priority</div>
-                    <div class="progress">
-                        <div class="progress-fill" style="width: 60%"></div>
-                    </div>
-                    <div>Agent: Scout</div>
-                    <div>Repo: github.com/org/repo-ml</div>
-                </div>
-            </div>
+            <div class="task-list"></div>
         </div>
 
-        <div class="column">
+        <!-- IN REVIEW COLUMN -->
+        <div class="column" type="review">
             <div class="column-header">In Review</div>
-            <div class="task-list" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
-                <div class="task review-task" draggable="true" onclick="openReviewModal(this)" ondragstart="handleDragStart(event)">
-                    <div class="task-title">Implement user authentication</div>
-                    <div class="task-priority medium">Medium Priority</div>
-                    <div class="progress">
-                        <div class="progress-fill" style="width: 100%"></div>
-                    </div>
-                    <div class="ai-progress">AI Progress: Login system completed, testing needed</div>
-                    <div>Agent: CodeBot</div>
-                    <div>Repo: github.com/org/auth-module</div>
-                    <div class="task-data" style="display: none;">
-                        <span class="prompt">Make me thing please build user auth pies</span>
-                        <span class="description">Implement secure user authentication system with login, registration, and session management features.</span>
-                        <span class="acceptance"></span>
-                        <span class="repo-name">auth-module</span>
-                        <span class="code-changes">Shows github and changed code in the github</span>
-                        <span class="progress-percent">100</span>
-                        <span class="agent-name">Claude AI</span>
-                        <span class="workload">61</span>
-                        <span class="performance">40</span>
-                    </div>
-                </div>
-                <div class="task review-task" draggable="true" onclick="openReviewModal(this)" ondragstart="handleDragStart(event)">
-                    <div class="task-title">Optimize database queries</div>
-                    <div class="task-priority high">High Priority</div>
-                    <div class="progress">
-                        <div class="progress-fill" style="width: 100%"></div>
-                    </div>
-                    <div class="ai-progress">AI Progress: All queries optimized, performance improved by 40%</div>
-                    <div>Agent: QueryMaster</div>
-                    <div>Repo: github.com/org/db-optimization</div>
-                    <div class="task-data" style="display: none;">
-                        <span class="prompt">Optimize all database queries for better performance</span>
-                        <span class="description">Analyze and optimize database queries to improve application performance, reduce response times, and enhance overall system efficiency.</span>
-                        <span class="acceptance"></span>
-                        <span class="repo-name">db-optimization</span>
-                        <span class="code-changes">Modified 3 query files with index optimizations</span>
-                        <span class="progress-percent">100</span>
-                        <span class="agent-name">QueryMaster AI</span>
-                        <span class="workload">45</span>
-                        <span class="performance">85</span>
-                    </div>
-                </div>
-            </div>
+            <div class="task-list"></div>
         </div>
 
-        <div class="column">
+        <!-- DONE COLUMN -->
+        <div class="column" type="done">
             <div class="column-header">Done</div>
-            <div class="task-list" ondrop="handleDrop(event)" ondragover="handleDragOver(event)"></div>
+            <div class="task-list"></div>
         </div>
 
-        <div class="column">
+        <!-- CANCELLED COLUMN -->
+        <div class="column" type="cancel">
             <div class="column-header">Cancelled</div>
-            <div class="task-list" ondrop="handleDrop(event)" ondragover="handleDragOver(event)"></div>
+            <div class="task-list"></div>
         </div>
-        <script src="/src/script.js"></script>
-    </main>
 
-    <!-- Review Modal -->
-    <div id="reviewModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span class="close">&times;</span>
-                <h3 id="modalTaskTitle">Build User Authentication</h3>
-                <div class="priority-badge" id="modalPriority">Medium</div>
-            </div>
-            
-            <div class="modal-body">
-                <div class="section">
-                    <label>Prompt used:</label>
-                    <div class="prompt-box" id="modalPrompt">
-                        Make me thing please build user auth pies
+        <!-- CREATE TASK MODAL -->
+        <div id="addNewTaskPanel">
+            <div class="modal-overlay">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>Create New Task</h2>
+                        <button class="close-btn">✕</button>
                     </div>
-                </div>
 
-                <div class="section">
-                    <label>Description</label>
-                    <div class="description-box" id="modalDescription">
-                        
-                    </div>
-                </div>
+                    <div class="modal-body">
+                        <label>Task Title</label>
+                        <input type="text" placeholder="Enter task title..." />
 
-                <div class="section">
-                    <label>Acceptance</label>
-                    <div class="acceptance-box" id="modalAcceptance">
-                        
-                    </div>
-                </div>
+                        <label>Description</label>
+                        <textarea type="text" placeholder="Describe the task in detail..."></textarea>
 
-                <div class="section">
-                    <label>Appended Code</label>
-                    <button class="repo-link" id="modalRepoLink">
-                        📁 In X Repository
-                        <span class="expand-icon">⤢</span>
-                    </button>
-                    <div class="code-info" id="modalCodeInfo">
-                        Shows github and changed code in the github
-                    </div>
-                </div>
+                        <label>Priority</label>
+                        <select>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                            <option value="high">High</option>
+                        </select>
 
-                <div class="section">
-                    <label>Progress: <span id="modalProgress">100%</span></label>
-                    <div class="progress-bar">
-                        <div class="progress-fill-modal" id="modalProgressBar"></div>
-                    </div>
-                </div>
+                        <label>Required Capabilities</label>
+                        <div class="tags">
+                            <span value="frontend">frontend</span>
+                            <span value="backend">backend</span>
+                            <span value="ui-ux">ui-ux</span>
+                        </div>
 
-                <div class="section">
-                    <label>Assigned AI Agent</label>
-                    <div class="agent-info">
-                        <div class="agent-icon">🤖</div>
-                        <div class="agent-details">
-                            <div class="agent-name" id="modalAgentName">Claude AI</div>
-                            <div class="agent-status-modal">
-                                Workload: <span id="modalWorkload">61%</span> Performance: <span id="modalPerformance">40%</span>
+                         <label>Requirements</label>
+                         <div id="requirements-container"></div>
+
+                         <label>Acceptance Criteria</label>
+                         <div id="acceptance-container"></div>
+
+                        <label class="github-label">Select GitHub Project</label>
+                        <div class="github-projects"></div>
+
+                        <label class="assign-label">Assign Agent</label>
+
+                        <div class="agent-card" value="Claude" filter="backend" agentId="1">
+                            <div>
+                                <strong>Claude</strong>
+                                <p>Workload: 0% • Performance: 88%</p>
                             </div>
+                        </div>
+
+                        <div class="agent-card" value="Gemini" filter="frontend" agentId="2">
+                            <div>
+                                <strong>Gemini</strong>
+                                <p>Workload: 0% • Performance: 95%</p>
+                            </div>
+                        </div>
+
+                        <div class="agent-card" value="OpenAi" filter="ui-ux" agentId="3">
+                            <div>
+                                <strong>OpenAi</strong>
+                                <p>Workload: 0% • Performance: 90%</p>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button class="cancel">Cancel</button>
+                            <button id="createBtn" class="create">Create Task</button>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <div class="modal-footer">
-                <button class="btn-reject" onclick="handleModalDecision('cancel')">Reject</button>
-                <button class="btn-try-again" onclick="handleModalDecision('retry')">Try Again</button>
-                <button class="btn-accept-modal" onclick="handleModalDecision('accept')">Accept</button>
-            </div>
         </div>
-    </div>
+
+        <!-- ACTIVITY SIDEBAR -->
+        <div id="activity-sidebar" class="activity-sidebar">
+            <div class="activity-header">
+                <h2>Live Activity</h2>
+                <button id="close-activity">✕</button>
+            </div>
+
+            <div id="activity-content" class="activity-content">
+                <!-- Events will be injected here -->
+            </div>
+        </div>     
+    </main>
+
+    <script src="src/script.js"></script>
+    <script src="dragAndDrop.js"></script>
+    <script src="src/inPrg.js"></script>
+    <script src = "aiAgents.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
 </body>
 </html>

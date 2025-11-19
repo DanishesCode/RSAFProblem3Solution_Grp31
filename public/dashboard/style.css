@@ -1,0 +1,277 @@
+/* Global */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f7f4ef;
+    color: #000;
+    text-align: center;
+  }
+  
+  /* Header */
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px;
+  }
+  
+  .filters {
+    background: #c9b59c;
+    border: none;
+    color: #fff;
+    padding: 15px 28px;
+    border-radius: 12px;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  
+  .title-wrap {
+    flex: 1;
+    text-align: center;
+    margin-right: 60px;
+  }
+  
+  .title {
+    font-size: 40px;
+    margin: 0;
+  }
+  
+  .subtitle {
+    color: #555;
+    margin-top: -5px;
+  }
+  
+  /* Chart Section */
+  .chart-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    gap: 125px;
+  }
+  
+  #chart-container {
+    width: 450px;
+    height: 450px;
+    position: relative;
+    padding-left:200px
+  }
+  
+  .center-label {
+    position: absolute;
+    top: 50%;
+    padding-left: 450px;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: -1; 
+  }
+  
+  .center-label .count {
+    font-size: 50px;
+    font-weight: bold;
+  }
+  
+  .center-label .count-sub {
+    margin-top: -8px;
+    font-size: 18px;
+    color: #444;
+  }
+  
+  /* Legend */
+  .legend {
+    text-align: left;
+    font-size: 18px;
+  }
+  
+  .legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    margin-right: 8px;
+  }
+  
+  .swatch-todo {
+    background: #4D4D5B;
+  }
+  
+  .swatch-progress {
+    background: #1D27DA;
+  }
+  
+  .swatch-review {
+    background: #181FAA;
+  }
+  
+  .swatch-done {
+    background: #15D94A;
+  }
+  
+  .swatch-cancel {
+    background: #F71E21;
+  }
+  
+  /* Back Button */
+  .back-btn-wrap {
+    margin-top: 40px;
+  }
+  
+  .back {
+    background: #c9b59c;
+    border: none;
+    color: white;
+    padding: 15px 30px;
+    font-size: 22px;
+    border-radius: 12px;
+    cursor: pointer;
+    margin: auto auto;
+  }
+  .filter-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh; /* full viewport height */
+    background: linear-gradient(180deg, #f5e9d3 0%, #d8c0a1 100%);
+    padding: 25px 20px;
+    box-sizing: border-box;
+    display: none;
+    flex-direction: column;
+    justify-content: flex-start;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', sans-serif;
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    overflow: hidden; /* sidebar itself doesn’t scroll */
+  }
+  
+  /* Close button */
+  .filter-sidebar .close-btn {
+    align-self: flex-end;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 22px;
+    color: #7a5a3d;
+    transition: color 0.2s;
+  }
+  
+  .filter-sidebar .close-btn:hover {
+    color: #000;
+  }
+  
+  /* Section headers */
+  .filter-sidebar h3 {
+    margin: 15px 0 10px 0;
+    font-weight: 700;
+    color: #5b3d23;
+    font-size: 16px;
+  }
+  
+  /* Filter sections */
+  .filter-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* Scrollable repository list */
+  .scrollable {
+    max-height: 140px; /* only repository buttons scroll */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 5px;
+  }
+  
+  /* Search input */
+  .filter-section input[type="text"] {
+    width: 90%;
+    padding: 6px 12px;
+    margin-bottom: 10px;
+    border-radius: 25px;
+    border: 1px solid #d2bfa1;
+    outline: none;
+    font-size: 14px;
+    background-color: #fff8f0;
+    transition: all 0.2s;
+  }
+  
+  .filter-section input[type="text"]:focus {
+    border-color: #a67c52;
+    box-shadow: 0 0 5px rgba(166, 124, 82, 0.5);
+  }
+  
+  /* Placeholder buttons (Repository / AI / Priority) */
+  .filter-section button {
+    width: 100%;
+    padding: 12px 15px;
+    border: none;
+    border-radius: 12px;
+    background-color: #fff;
+    cursor: pointer;
+    font-weight: bold;
+    text-align: left;
+    color: #5b3d23;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s;
+  }
+  
+  /* Extra gap for AI & Priority buttons */
+  .filter-section.ai-agent-buttons button,
+  .filter-section.priority-buttons button {
+    margin-bottom: 12px;
+  }
+  
+  .filter-section button:hover {
+    background-color: #f3e4d2;
+    transform: translateX(3px);
+  }
+  
+  /* Apply button smaller, narrower, and pinned at bottom */
+  .apply-btn {
+    margin-top: auto; /* pushes it to bottom */
+    padding: 8px 12px; /* smaller than placeholders */
+    width: 80%; /* narrower than sidebar */
+    align-self: center; /* center horizontally */
+    background: linear-gradient(90deg, #76c043, #4cae28);
+    border: none;
+    border-radius: 12px;
+    font-weight: bold;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s;
+  }
+  
+  .apply-btn:hover {
+    background: linear-gradient(90deg, #4cae28, #76c043);
+    transform: translateY(-1px);
+  }
+  /* Hidden state (default) */
+.filter-sidebar {
+    transform: translateX(-100%);
+    opacity: 0;
+    transition: transform 0.35s ease-out, opacity 0.35s ease-out;
+  }
+  
+  /* When opened */
+  .filter-sidebar.open {
+    display: flex;        /* your existing flex layout */
+    transform: translateX(0);
+    opacity: 1;
+  }
+  /* Highlight selected filter buttons */
+.filter-section button.selected {
+    background-color: #1d27da;  /* active color */
+    color: white;               /* text color when active */
+    border: 1px solid #1d27da;  /* optional */
+    font-weight: bold;           /* optional */
+  }
+  
