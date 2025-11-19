@@ -204,7 +204,7 @@
     // --- click to open panel ---
     document.addEventListener("click", e => {
         const t = e.target.closest('.task');
-        if (!t || t.getAttribute('taskid') === 'TEMPLATE') return;
+        if (!t || t.getAttribute('taskid') === 'TEMPLATE' || t.getAttribute("status") != "progress") return;
         startProcessForTask(t);
         showPanelForTask(t);
     });
