@@ -27,7 +27,9 @@ app.use(cors({
         'http://localhost:5500',
         'http://127.0.0.1:5500',
         'http://localhost:5504',
-        'http://127.0.0.1:5504'
+        'http://127.0.0.1:5504',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -48,21 +50,6 @@ app.use('/controllers', express.static(path.join(__dirname, 'controllers')));
 
 // ---------------- ROUTES ----------------
 
-// Login pages
-app.get("/login", (req, res) =>
-    res.sendFile(path.join(__dirname, "public/login/login.html"))
-);
-
-// Dashboard
-app.get("/dashboard", (req, res) => {
-    if (!req.isAuthenticated()) return res.redirect("/login");
-    res.send(`
-        <h1>Welcome, ${req.user.displayName || req.user.username}</h1>
-        <img src="${req.user.photo}" width="100"/><br>
-        <a href="/logout">Logout</a>
-    `);
-});
-
 // ----- GitHub OAuth -----
 app.get("/github", githubController.githubRedirect);
 app.get("/github/callback", githubController.githubCallback);
@@ -80,20 +67,65 @@ app.post('/ai/gemini/stream', GeminiController.streamResponse);
 app.post('/ai/openai/generate', OpenAIController.generateResponse);
 app.post('/ai/openai/stream', OpenAIController.streamResponse);
 
-// -------------------------------------------------------------
+// Vite integration for development
+async function setupVite() {
+    if (process.env.NODE_ENV !== 'production') {
+        try {
+            const { createServer } = require('vite');
+            const vite = await createServer({
+                server: { middlewareMode: true },
+                appType: 'spa',
+                root: __dirname
+            });
+            app.use(vite.middlewares);
+            console.log('Vite middleware integrated');
+        } catch (error) {
+            console.error('Error setting up Vite:', error);
+        }
+    }
+}
+
+// Serve React app in production
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, 'dist')));
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    });
+} else {
+    // In development, serve index.html for all non-API routes
+    app.get('*', async (req, res, next) => {
+        // Skip API routes
+        if (req.path.startsWith('/github') || 
+            req.path.startsWith('/backlog') || 
+            req.path.startsWith('/ai') ||
+            req.path.startsWith('/login') ||
+            req.path.startsWith('/dashboard')) {
+            return next();
+        }
+        // Serve index.html for React routes
+        res.sendFile(path.join(__dirname, 'index.html'));
+    });
+}
 
 // Start server
-app.listen(port, async () => {
-    try {
-        await sql.connect(dbConfig);
-        console.log("Database connected");
-    } catch (err) {
-        console.error("DB connection error:", err);
-        process.exit(1);
-    }
+async function startServer() {
+    await setupVite();
+    
+    app.listen(port, async () => {
+        try {
+            await sql.connect(dbConfig);
+            console.log("Database connected");
+        } catch (err) {
+            console.error("DB connection error:", err);
+            process.exit(1);
+        }
 
-    console.log(`Server running on port ${port}`);
-});
+        console.log(`Server running on port ${port}`);
+        console.log(`React app available at http://localhost:${port}`);
+    });
+}
+
+startServer();
 
 // Graceful shutdown
 process.on("SIGINT", async () => {

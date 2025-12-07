@@ -6,6 +6,7 @@ const KanbanColumn = ({ columnKey, title, tasks, onTaskClick, onTaskMove }) => {
 
   const handleDragOver = (e) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
     setIsDragOver(true);
   };
 
@@ -17,44 +18,36 @@ const KanbanColumn = ({ columnKey, title, tasks, onTaskClick, onTaskMove }) => {
     e.preventDefault();
     setIsDragOver(false);
     
-    const taskData = JSON.parse(e.dataTransfer.getData('text/plain'));
-    const { taskId, fromColumn } = taskData;
-    
-    if (fromColumn !== columnKey) {
-      let reason;
-      switch(columnKey) {
-        case 'done':
-          reason = 'Accepted by reviewer';
-          break;
-        case 'inProgress':
-          reason = 'Sent back for improvements';
-          break;
-        case 'cancelled':
-          reason = 'Cancelled by reviewer';
-          break;
-        default:
-          reason = 'Moved';
-      }
+    try {
+      const taskData = JSON.parse(e.dataTransfer.getData('text/plain'));
+      const { taskId, fromColumn } = taskData;
       
-      onTaskMove(taskId, fromColumn, columnKey, reason);
+      if (fromColumn !== columnKey && onTaskMove) {
+        onTaskMove(taskId, fromColumn, columnKey);
+      }
+    } catch (error) {
+      console.error('Error handling drop:', error);
     }
   };
 
   return (
-    <div className={`column ${isDragOver ? 'drag-highlight' : ''}`}>
+    <div 
+      className={`column ${isDragOver ? 'drag-over' : ''}`}
+      type={columnKey}
+    >
       <div className="column-header">{title}</div>
       <div 
-        className={`task-list ${isDragOver ? 'drag-over' : ''}`}
+        className="task-list"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
         {tasks.map(task => (
           <TaskCard
-            key={task.id}
+            key={task.taskid}
             task={task}
             columnKey={columnKey}
-            onClick={() => columnKey === 'inReview' ? onTaskClick(task) : null}
+            onClick={onTaskClick}
           />
         ))}
       </div>

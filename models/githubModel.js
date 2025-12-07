@@ -4,13 +4,14 @@ const { dbConfig } = require("../dbConfig");
 
 
 // Exchange code for access token
-const githubExchangeCode = async (code) => {
+const githubExchangeCode = async (code, redirectUri) => {
   const response = await axios.post(
     "https://github.com/login/oauth/access_token",
     {
       client_id: process.env.GITHUB_CLIENT_ID,
       client_secret: process.env.GITHUB_CLIENT_SECRET,
-      code: code
+      code: code,
+      redirect_uri: redirectUri
     },
     { headers: { Accept: "application/json" } }
   );

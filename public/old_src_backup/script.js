@@ -2,17 +2,17 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    /* -------------------------
-       Redirect if not logged in
-    --------------------------*/
+    /* ======================================================
+       REDIRECT IF NOT LOGGED IN
+    ======================================================= */
     if (!localStorage.getItem("githubId")) {
-        window.location.href = "http://localhost:3000/login/";
+        window.location.href = "http://localhost:3001/login/";
         return;
     }
 
-    /* -------------------------
+    /* ======================================================
        DOM ELEMENTS
-    --------------------------*/
+    ======================================================= */
     const newBtn = document.querySelector(".btn-new");
     const activityBtn = document.querySelector(".btn-activity");
     const modalPanel = document.querySelector("#addNewTaskPanel");
@@ -35,8 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const requirementContainer = modal.querySelector("#requirements-container");
     const acceptanceContainer = modal.querySelector("#acceptance-container");
 
-    
-    // Fallback: if structure differs, manually find by label proximity
     if (!requirementContainer || !acceptanceContainer) {
         const labels = Array.from(modal.querySelectorAll("label"));
         const reqLabel = labels.find(l => l.textContent.includes("Requirements"));
@@ -46,20 +44,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const githubProjectsContainer = modal.querySelector(".github-projects");
-
     const reposString = localStorage.getItem("repos");
     const repos = reposString ? reposString.split(",") : [];
-
     const apiBaseUrl = "http://localhost:3000";
     const taskTemplate = document.querySelector(".task");
-
     const searchBar = document.querySelector(".search-bar input");
-
-    /* Repo cards reference (gets refreshed) */
     let repoCards = [];
 
     /* ======================================================
-        DROPDOWN — FILTER
+       DROPDOWN — FILTER
     ======================================================= */
     const filterBtn = document.getElementById('open-filter');
     const filterPanel = document.getElementById('filterPanel');
@@ -69,7 +62,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const filterAgentsContainer = document.getElementById('filter-agents');
 
     function populateFilterOptions() {
-        // collect unique repos and agents from existing tasks + template attributes
         const tasks = Array.from(document.querySelectorAll('.task'));
         const reposSet = new Set();
         const agentsSet = new Set();
@@ -79,7 +71,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (r) reposSet.add(r);
             const a = (t.getAttribute('assignedAgent') || '').trim();
             if (a) agentsSet.add(a);
-            // fallback: read agent text
             if (!a) {
                 const node = t.querySelector('.agentSelected');
                 if (node) {
@@ -89,49 +80,40 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        // render repo checkboxes
         filterReposContainer.innerHTML = '';
         Array.from(reposSet).sort().forEach(repo => {
             const id = 'repo-' + repo.replace(/\s+/g,'-');
             const label = document.createElement('label');
-
             const span = document.createElement('span');
             span.className = 'filter-text';
             span.textContent = repo;
-
             const input = document.createElement('input');
             input.type = 'checkbox';
             input.className = 'filter-repo';
             input.value = repo;
             input.id = id;
-
             label.appendChild(span);
             label.appendChild(input);
             filterReposContainer.appendChild(label);
         });
 
-        // render agent checkboxes
         filterAgentsContainer.innerHTML = '';
         Array.from(agentsSet).sort().forEach(agent => {
             const id = 'agent-' + agent.replace(/\s+/g,'-');
             const label = document.createElement('label');
-
             const span = document.createElement('span');
             span.className = 'filter-text';
             span.textContent = agent;
-
             const input = document.createElement('input');
             input.type = 'checkbox';
             input.className = 'filter-agent';
             input.value = agent;
             input.id = id;
-
             label.appendChild(span);
             label.appendChild(input);
             filterAgentsContainer.appendChild(label);
         });
 
-        // bind change listeners
         document.querySelectorAll('.filter-repo, .filter-agent').forEach(cb => cb.addEventListener('change', applyFilters));
     }
 
@@ -140,7 +122,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const selectedAgents = Array.from(document.querySelectorAll('.filter-agent:checked')).map(i => i.value);
 
         document.querySelectorAll('.task').forEach(t => {
-            // hide template if it's intended as template
             if (t.getAttribute('taskid') === 'TEMPLATE') {
                 t.style.display = 'none';
                 return;
@@ -165,7 +146,6 @@ document.addEventListener("DOMContentLoaded", () => {
         applyFilters();
     }
 
-    // panel toggle
     if (filterBtn) filterBtn.addEventListener('click', () => {
         filterPanel.classList.toggle('hidden');
         if (!filterPanel.classList.contains('hidden')) {
@@ -181,7 +161,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     if (clearFiltersBtn) clearFiltersBtn.addEventListener('click', clearFilters);
 
-    // hide filter panel when clicking outside
     document.addEventListener('click', (e) => {
         if (!filterPanel || !filterBtn) return;
         if (filterPanel.classList.contains('hidden')) return;
@@ -204,7 +183,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function pushActivity({ title, agent, status, priority, repo, percent }) {
         const entry = document.createElement("div");
         entry.className = "activity-entry";
-
         entry.innerHTML = `
             <div class="activity-entry-title">${title}</div>
             <small>Status: <b>${status}</b></small><br>
@@ -213,7 +191,6 @@ document.addEventListener("DOMContentLoaded", () => {
             <small>Repo: ${repo}</small><br>
             <small>Progress: ${percent}%</small>
         `;
-
         activityContent.prepend(entry);
     }
 
@@ -226,7 +203,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         items.forEach(item => {
             const title = item.getAttribute("title")?.toLowerCase() || "";
-
             if (title.includes(query) && title !== "example task title") {
                 item.style.display = "block";
             } else {
@@ -252,11 +228,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         agentCards.forEach(card => {
             const capabilities = card.getAttribute("filter").split(",");
-
-            const show =
-                selected.length === 0 ||
-                selected.every(s => capabilities.includes(s));
-
+            const show = selected.length === 0 || selected.every(s => capabilities.includes(s));
             card.style.display = show ? "flex" : "none";
         });
     }
@@ -272,25 +244,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     /* ======================================================
-       LOAD REPOS INTO MODAL (FINAL FIXED VERSION)
+       LOAD REPOS INTO MODAL
     ======================================================= */
     function loadReposIntoModal() {
-        githubProjectsContainer.innerHTML = ""; // clear previous
-
+        githubProjectsContainer.innerHTML = "";
         repos.forEach(repoName => {
             const card = document.createElement("div");
             card.classList.add("repo-card");
             card.innerHTML = `<strong value="${repoName.trim()}">${repoName.trim()}</strong>`;
-
             card.addEventListener("click", () => {
                 repoCards.forEach(c => c.classList.remove("selected"));
                 card.classList.add("selected");
             });
-
             githubProjectsContainer.appendChild(card);
         });
-
-        // refresh reference
         repoCards = Array.from(githubProjectsContainer.querySelectorAll(".repo-card"));
     }
 
@@ -319,7 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /* ======================================================
-       NOTIFICATION SYSTEM (if not already present)
+       NOTIFICATION SYSTEM
     ======================================================= */
     function notify(message, duration = 2500, type = "error") {
         const container = document.getElementById("notification-container");
@@ -339,9 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }, duration);
     }
 
-    // Alias for consistency
     const showNotification = notify;
-
 
     /* ======================================================
        VALIDATION
@@ -364,8 +329,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return true;
     }
 
-    
-    //initialize logs
+    /* ======================================================
+       INITIALIZE LOGS
+    ======================================================= */
     async function intializeLogs(){
         let userId = localStorage.getItem("userId");
         const logs = await fetch(`/backlog/getUserLogs?userId=${userId}`)
@@ -373,15 +339,15 @@ document.addEventListener("DOMContentLoaded", () => {
         logs.forEach(function(data){
             addTask(data);
         })
-}
-
-// wait for logs to load, THEN update workload
-(async () => {
-    await intializeLogs();
-    if (typeof updateAgentWorkload === "function") {
-        updateAgentWorkload();
     }
-})();
+
+    (async () => {
+        await intializeLogs();
+        if (typeof updateAgentWorkload === "function") {
+            updateAgentWorkload();
+        }
+    })();
+
     /* ======================================================
        SEND TO BACKEND
     ======================================================= */
@@ -392,7 +358,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)
             });
-
             return await response.json();
         } catch (err) {
             console.error("Error saving:", err);
@@ -400,106 +365,93 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /* ======================================================
-       ADD TASK TO UI (UPDATED TO FIT EDIT)
+       ADD TASK TO UI
     ======================================================= */
     function mapAgentIdToName(id) {
-    switch (String(id)) {
-        case "1": return "Claude";
-        case "2": return "Gemini";
-        case "3": return "OpenAI";
-        default: return "Unknown";
-    }
-}
-function addTask(taskData) {
-    const clone = taskTemplate.cloneNode(true);
-    clone.style.display = "block";
-
-    // Normalize requirements -> always array
-    let requirements = [];
-    if (Array.isArray(taskData.requirements)) {
-        requirements = taskData.requirements;
-    } else if (typeof taskData.requirements === "string") {
-        try {
-            const parsed = JSON.parse(taskData.requirements);
-            if (Array.isArray(parsed)) requirements = parsed;
-            else if (taskData.requirements.trim() !== "") requirements = [taskData.requirements.trim()];
-        } catch {
-            if (taskData.requirements.trim() !== "") requirements = [taskData.requirements.trim()];
+        switch (String(id)) {
+            case "1": return "Claude";
+            case "2": return "Gemini";
+            case "3": return "OpenAI";
+            default: return "Unknown";
         }
     }
 
-    // Normalize acceptanceCriteria -> always array
-    let acceptCrit = [];
-    if (Array.isArray(taskData.acceptanceCriteria)) {
-        acceptCrit = taskData.acceptanceCriteria;
-    } else if (typeof taskData.acceptanceCriteria === "string") {
-        try {
-            const parsed = JSON.parse(taskData.acceptanceCriteria);
-            if (Array.isArray(parsed)) acceptCrit = parsed;
-            else if (taskData.acceptanceCriteria.trim() !== "") acceptCrit = [taskData.acceptanceCriteria.trim()];
-        } catch {
-            if (taskData.acceptanceCriteria.trim() !== "") acceptCrit = [taskData.acceptanceCriteria.trim()];
+    function addTask(taskData) {
+        const clone = taskTemplate.cloneNode(true);
+        clone.style.display = "block";
+
+        let requirements = [];
+        if (Array.isArray(taskData.requirements)) {
+            requirements = taskData.requirements;
+        } else if (typeof taskData.requirements === "string") {
+            try {
+                const parsed = JSON.parse(taskData.requirements);
+                if (Array.isArray(parsed)) requirements = parsed;
+                else if (taskData.requirements.trim() !== "") requirements = [taskData.requirements.trim()];
+            } catch {
+                if (taskData.requirements.trim() !== "") requirements = [taskData.requirements.trim()];
+            }
         }
+
+        let acceptCrit = [];
+        if (Array.isArray(taskData.acceptanceCriteria)) {
+            acceptCrit = taskData.acceptanceCriteria;
+        } else if (typeof taskData.acceptanceCriteria === "string") {
+            try {
+                const parsed = JSON.parse(taskData.acceptanceCriteria);
+                if (Array.isArray(parsed)) acceptCrit = parsed;
+                else if (taskData.acceptanceCriteria.trim() !== "") acceptCrit = [taskData.acceptanceCriteria.trim()];
+            } catch {
+                if (taskData.acceptanceCriteria.trim() !== "") acceptCrit = [taskData.acceptanceCriteria.trim()];
+            }
+        }
+
+        const agentId = taskData.agentId || taskData.agentid || "";
+        const agentName = taskData.assignedAgent || mapAgentIdToName(agentId);
+
+        clone.setAttribute("taskid", taskData.taskid || `task-${Date.now()}`);
+        clone.setAttribute("status", taskData.status || "toDo");
+        clone.setAttribute("title", taskData.title || "");
+        clone.setAttribute("priority", taskData.priority || "");
+        clone.setAttribute("repo", taskData.repo || "");
+        clone.setAttribute("agentId", agentId);
+        clone.setAttribute("assignedAgent", agentName);
+        clone.setAttribute("description", taskData.description || "");
+        clone.setAttribute("requirements", JSON.stringify(requirements));
+        clone.setAttribute("acceptCrit", JSON.stringify(acceptCrit));
+
+        clone.querySelector(".task-title").textContent = taskData.title || "";
+        clone.querySelector(".task-priority").textContent = taskData.priority || "";
+        clone.querySelector(".repoSelected").textContent = `Repo: ${taskData.repo || ""}`;
+        clone.querySelector(".agentSelected").textContent = `Agent: ${agentName}`;
+
+        document
+            .querySelector(`.column[type="${taskData.status || "toDo"}"] .task-list`)
+            .appendChild(clone);
+
+        if (typeof attachDragListeners === "function") {
+            attachDragListeners();
+        }
+
+        clone.addEventListener("click", (e) => {
+            if (e.target.closest(".task-control")) return;
+            const status = clone.getAttribute("status");
+            if (status !== "toDo") return;
+            openEditModal(clone);
+        });
+
+        pushActivity({
+            title: taskData.title,
+            agent: agentName,
+            status: "Created",
+            priority: taskData.priority,
+            repo: taskData.repo,
+            percent: 0
+        });
     }
-
-    // ---- FIXED AGENT HANDLING ----
-    const agentId = taskData.agentId || taskData.agentid || "";
-    const agentName = taskData.assignedAgent || mapAgentIdToName(agentId);
-
-    // store attributes so editor can read them
-    clone.setAttribute("taskid", taskData.taskid || `task-${Date.now()}`);
-    clone.setAttribute("status", taskData.status || "toDo");
-    clone.setAttribute("title", taskData.title || "");
-    clone.setAttribute("priority", taskData.priority || "");
-    clone.setAttribute("repo", taskData.repo || "");
-
-    clone.setAttribute("agentId", agentId);          // ✔ fixed
-    clone.setAttribute("assignedAgent", agentName);  // ✔ fixed
-
-    clone.setAttribute("description", taskData.description || ""); // ✔ KEEP THIS EXACTLY HERE
-
-    // store normalized arrays
-    clone.setAttribute("requirements", JSON.stringify(requirements));
-    clone.setAttribute("acceptCrit", JSON.stringify(acceptCrit));
-
-    // UI elements
-    clone.querySelector(".task-title").textContent = taskData.title || "";
-    clone.querySelector(".task-priority").textContent = taskData.priority || "";
-    clone.querySelector(".repoSelected").textContent = `Repo: ${taskData.repo || ""}`;
-    clone.querySelector(".agentSelected").textContent = `Agent: ${agentName}`;  // ✔ fixed
-
-    // append to correct column
-    document
-        .querySelector(`.column[type="${taskData.status || "toDo"}"] .task-list`)
-        .appendChild(clone);
-
-    if (typeof attachDragListeners === "function") {
-        attachDragListeners();
-    }
-
-    // Attach click -> open edit modal
-    clone.addEventListener("click", (e) => {
-    if (e.target.closest(".task-control")) return;
-
-    const status = clone.getAttribute("status");
-    if (status !== "toDo") return;
-
-    openEditModal(clone);
-});
-
-
-    pushActivity({
-        title: taskData.title,
-        agent: agentName,          // ✔ fixed
-        status: "Created",
-        priority: taskData.priority,
-        repo: taskData.repo,
-        percent: 0
-    });
-}
 
     /* ======================================================
-        RESET MODAL
+       RESET MODAL
     ======================================================= */
     function resetModal() {
         titleInput.value = "";
@@ -507,37 +459,31 @@ function addTask(taskData) {
         prioritySelect.value = "medium";
         tags.forEach(t => t.classList.remove("selected"));
         agentCards.forEach(a => a.classList.remove("selected"));
-
-        // Clear and reset containers
         requirementContainer.innerHTML = "";
         acceptanceContainer.innerHTML = "";
-        
-        // Add single empty input to each
         addInput(requirementContainer);
         addInput(acceptanceContainer);
-
         repoCards.forEach(r => r.classList.remove("selected"));
     }
 
     /* ======================================================
-        OPEN MODAL
+       OPEN MODAL
     ======================================================= */
     newBtn.addEventListener("click", () => {
         resetModal();
-        loadReposIntoModal();   // IMPORTANT
+        loadReposIntoModal();
         modalPanel.style.display = "block";
-        editingTaskElement = null;                         // clear edit state
+        editingTaskElement = null;
         createBtn.textContent = "Create Task";
         createBtn.classList.remove("save");
         createBtn.classList.add("create");
-        if (modalTitle) modalTitle.textContent = "Create Task"; // update header if present
+        if (modalTitle) modalTitle.textContent = "Create Task";
     });
 
     closeBtn.addEventListener("click", () => {
         modalPanel.style.display = "none";
     });
-   
-    // Cancel button handler
+
     if (cancelBtn) {
         cancelBtn.addEventListener("click", () => {
             modalPanel.style.display = "none";
@@ -549,8 +495,6 @@ function addTask(taskData) {
         });
     }
 
-
-    // Ensure modal dynamic rows can be added (used by openEditModal / new task)
     function addInput(container) {
         if (!container) return null;
         const row = document.createElement("div");
@@ -566,25 +510,21 @@ function addTask(taskData) {
     }
 
     /* ======================================================
-       CREATE TASK (UPDATED FOR EDIT)
+       CREATE TASK
     ======================================================= */
     createBtn.addEventListener("click", async () => {
-        // If editing an existing task, update DOM instead of creating
         if (editingTaskElement) {
             if (!validateForm()) return;
-
             const values = collectValues();
 
-            // update stored attributes
             editingTaskElement.setAttribute("title", values.title);
             editingTaskElement.setAttribute("description", values.description || "");
             editingTaskElement.setAttribute("priority", values.priority);
             editingTaskElement.setAttribute("assignedAgent", values.assignedAgent || "");
             editingTaskElement.setAttribute("repo", values.repo || "");
-            editingTaskElement.setAttribute("requirements", JSON.stringify(values.requirements ));
-            editingTaskElement.setAttribute("acceptCrit", JSON.stringify(values.acceptanceCriteria ));
+            editingTaskElement.setAttribute("requirements", JSON.stringify(values.requirements));
+            editingTaskElement.setAttribute("acceptCrit", JSON.stringify(values.acceptanceCriteria));
 
-            // update visible fields
             const tt = editingTaskElement.querySelector(".task-title");
             if (tt) tt.textContent = values.title;
             const pp = editingTaskElement.querySelector(".task-priority");
@@ -594,7 +534,6 @@ function addTask(taskData) {
             const ag = editingTaskElement.querySelector(".agentSelected");
             if (ag) ag.textContent = `Agent: ${values.assignedAgent || ""}`;
 
-            // close modal and reset edit state
             modalPanel.style.display = "none";
             editingTaskElement = null;
             createBtn.textContent = "Create Task";
@@ -605,7 +544,6 @@ function addTask(taskData) {
             return;
         }
 
-        // --- existing create flow ---
         if (!validateForm()) return;
 
         const formData = collectValues();
@@ -626,25 +564,20 @@ function addTask(taskData) {
 
     function openEditModal(taskEl) {
         if (!taskEl) return;
-        // ignore template element
         if (taskEl.getAttribute('taskid') === 'TEMPLATE') return;
 
         editingTaskElement = taskEl;
 
-        // Prefill simple inputs
         titleInput.value = taskEl.getAttribute('title') || taskEl.querySelector('.task-title')?.textContent || "";
         descriptionInput.value = taskEl.getAttribute('description') || "";
         prioritySelect.value = taskEl.getAttribute('priority') || "medium";
 
-        // Prefill requirements
         try {
             let raw = taskEl.getAttribute("requirements") || "[]";
-            // If raw is a JSON string of an array or an already stringified array, parse until array
             let reqs = [];
             if (typeof raw === "string") {
                 try {
                     const parsedOnce = JSON.parse(raw);
-                    // parsedOnce might be array or a string containing JSON array
                     if (Array.isArray(parsedOnce)) reqs = parsedOnce;
                     else if (typeof parsedOnce === "string") {
                         try {
@@ -654,7 +587,6 @@ function addTask(taskData) {
                         } catch { reqs = [parsedOnce]; }
                     } else reqs = [];
                 } catch {
-                    // raw not JSON -> treat as single value if non-empty
                     if (raw.trim() !== "") reqs = [raw.trim()];
                 }
             } else if (Array.isArray(raw)) {
@@ -682,7 +614,6 @@ function addTask(taskData) {
             addInput(requirementContainer);
         }
 
-        // Prefill acceptance criteria (same normalization)
         try {
             let rawA = taskEl.getAttribute("acceptCrit") || "[]";
             let accs = [];
@@ -725,11 +656,9 @@ function addTask(taskData) {
             addInput(acceptanceContainer);
         }
 
-        // Select agent card matching assignedAgent attribute/value
         const assigned = taskEl.getAttribute('assignedAgent') || "";
         agentCards.forEach(c => c.classList.toggle('selected', c.getAttribute('value') === assigned));
 
-        // Load repos and pick the matching repo card
         loadReposIntoModal();
         const repoVal = taskEl.getAttribute('repo') || "";
         repoCards.forEach(r => {
@@ -737,7 +666,6 @@ function addTask(taskData) {
             r.classList.toggle('selected', v === repoVal);
         });
 
-        // Switch modal into edit mode visually
         modalPanel.style.display = "block";
         createBtn.textContent = "Save";
         createBtn.classList.add("save");
@@ -745,22 +673,16 @@ function addTask(taskData) {
         if (modalTitle) modalTitle.textContent = "Edit Task";
     }
 
-    // edit task only for todo column
     document.addEventListener('click', (e) => {
         const taskEl = e.target.closest('.task');
         if (!taskEl) return;
-        // ignore the template element
         if (taskEl.getAttribute && taskEl.getAttribute('taskid') === 'TEMPLATE') return;
-        // ignore clicks on internal controls
         if (e.target.closest('.task-control') || e.target.closest('.add-btn')) return;
-        
-        // Check if task is in a toDo column ONLY
         const column = taskEl.closest('.column');
         if (!column || column.getAttribute('type') !== 'toDo') return;
-        
-        // open modal prefilling fields
         openEditModal(taskEl);
     });
+
     document.getElementById("open-dashboard").addEventListener("click", () => {
         window.location.href = "../dashboard/dashboard.html"
     });
@@ -770,24 +692,15 @@ function addTask(taskData) {
     ======================================================= */
     const reviewModal = document.getElementById('reviewModal');
     const reviewClose = document.querySelector('.review-close');
-    const reviewAccept = document.getElementById('review-accept');
-    const reviewReject = document.getElementById('review-reject');
     const reviewRetry = document.getElementById('review-retry');
-
     let currentReviewTask = null;
 
-    // Open review modal when clicking tasks in "In Review" column
-    // Open done modal when clicking tasks in "Done" column
     document.addEventListener('click', (e) => {
         const taskEl = e.target.closest('.task');
         if (!taskEl) return;
-        
-        // Ignore template task
         if (taskEl.getAttribute('taskid') === 'TEMPLATE') return;
-        
         const column = taskEl.closest('.column');
         if (!column) return;
-        
         const columnType = column.getAttribute('type');
         
         if (columnType === 'review') {
@@ -813,13 +726,11 @@ function addTask(taskData) {
             progress: parseFloat(taskEl.querySelector('.progress-fill')?.style.width) || 0
         };
 
-        // Get agent name from the task element
         const agentText = taskEl.querySelector('.agentSelected')?.textContent || '';
         const agentName = agentText.replace('Agent:', '').trim() || 'Unknown';
 
-        // Populate modal
         document.getElementById('review-task-title').textContent = taskData.title;
-        document.getElementById('review-prompt').textContent = taskData.description; // Show description as prompt
+        document.getElementById('review-prompt').textContent = taskData.description;
         document.getElementById('review-acceptance').textContent = taskData.acceptance;
         document.getElementById('review-code-changes').textContent = taskData.agentProcess || 'Shows github and changed code in the github';
         document.getElementById('review-repo-name').textContent = 'In ' + (taskData.repo.split('/').pop() || taskData.repo);
@@ -828,7 +739,6 @@ function addTask(taskData) {
         document.getElementById('review-progress-label').textContent = `Progress: ${Math.round(taskData.progress)}%`;
         document.getElementById('review-progress-fill').style.width = taskData.progress + '%';
 
-        // Set priority badge
         const priorityBadge = document.getElementById('review-priority-badge');
         priorityBadge.textContent = taskData.priority.charAt(0).toUpperCase() + taskData.priority.slice(1);
         
@@ -857,16 +767,11 @@ function addTask(taskData) {
         const taskId = currentReviewTask.getAttribute('taskid');
         
         if (decision === 'retry') {
-            // Get current task data
             const description = currentReviewTask.getAttribute('description');
             const acceptance = currentReviewTask.getAttribute('acceptCrit');
-            
-            // Re-prompt the AI with description and acceptance criteria
-            // For now, just move it back to In Progress
             newStatus = 'progress';
             targetColumn = document.querySelector('.column[type="progress"] .task-list');
             
-            // Update status in backend
             try {
                 const response = await fetch('http://localhost:3000/backlog/status-update', {
                     method: 'PUT',
@@ -875,16 +780,12 @@ function addTask(taskData) {
                 });
 
                 if (response.ok) {
-                    // Move task to In Progress column
                     currentReviewTask.setAttribute('status', newStatus);
                     if (targetColumn) {
                         targetColumn.appendChild(currentReviewTask);
                     }
-                    
-                    // Show notification with prompt info
                     showNotification('Task sent back to In Progress for revision.', 'success');
                     
-                    // Log activity
                     pushActivity({
                         title: currentReviewTask.getAttribute('title'),
                         agent: currentReviewTask.querySelector('.agentSelected')?.textContent.replace('Agent:', '').trim(),
@@ -894,9 +795,6 @@ function addTask(taskData) {
                         percent: parseFloat(currentReviewTask.querySelector('.progress-fill')?.style.width) || 0
                     });
                     
-                    // TODO: Re-prompt AI agent with:
-                    // Description: ${description}
-                    // Acceptance Criteria: ${acceptance}
                     console.log('Re-prompting with:', { description, acceptance });
                 } else {
                     showNotification('Failed to update task status', 'error');
@@ -910,11 +808,9 @@ function addTask(taskData) {
         closeReviewModal();
     }
 
-    // Event listeners
     reviewClose.addEventListener('click', closeReviewModal);
     reviewRetry.addEventListener('click', () => handleReviewDecision('retry'));
 
-    // Close modal when clicking outside
     reviewModal.addEventListener('click', (e) => {
         if (e.target === reviewModal) {
             closeReviewModal();
@@ -922,7 +818,7 @@ function addTask(taskData) {
     });
 
     /* ======================================================
-       DONE MODAL FUNCTIONALITY (View only)
+       DONE MODAL FUNCTIONALITY
     ======================================================= */
     const doneModal = document.getElementById('doneModal');
     const doneClose = document.querySelector('.done-close');
@@ -938,11 +834,9 @@ function addTask(taskData) {
             progress: parseFloat(taskEl.querySelector('.progress-fill')?.style.width) || 100
         };
 
-        // Get agent name from the task element
         const agentText = taskEl.querySelector('.agentSelected')?.textContent || '';
         const agentName = agentText.replace('Agent:', '').trim() || 'Unknown';
 
-        // Populate modal
         document.getElementById('done-task-title').textContent = taskData.title;
         document.getElementById('done-prompt').textContent = taskData.description;
         document.getElementById('done-acceptance').textContent = taskData.acceptance;
@@ -953,7 +847,6 @@ function addTask(taskData) {
         document.getElementById('done-progress-label').textContent = `Progress: ${Math.round(taskData.progress)}%`;
         document.getElementById('done-progress-fill').style.width = taskData.progress + '%';
 
-        // Set priority badge
         const priorityBadge = document.getElementById('done-priority-badge');
         priorityBadge.textContent = taskData.priority.charAt(0).toUpperCase() + taskData.priority.slice(1);
         
@@ -975,10 +868,7 @@ function addTask(taskData) {
         doneModal.style.display = 'none';
     }
 
-    // Event listeners for done modal
     doneClose.addEventListener('click', closeDoneModal);
-
-    // Close modal when clicking outside
     doneModal.addEventListener('click', (e) => {
         if (e.target === doneModal) {
             closeDoneModal();
@@ -986,7 +876,7 @@ function addTask(taskData) {
     });
 
     /* ======================================================
-       CANCELLED MODAL FUNCTIONALITY (View only)
+       CANCELLED MODAL FUNCTIONALITY
     ======================================================= */
     const cancelledModal = document.getElementById('cancelledModal');
     const cancelledClose = document.querySelector('.cancelled-close');
@@ -1002,11 +892,9 @@ function addTask(taskData) {
             progress: parseFloat(taskEl.querySelector('.progress-fill')?.style.width) || 0
         };
 
-        // Get agent name from the task element
         const agentText = taskEl.querySelector('.agentSelected')?.textContent || '';
         const agentName = agentText.replace('Agent:', '').trim() || 'Unknown';
 
-        // Populate modal
         document.getElementById('cancelled-task-title').textContent = taskData.title;
         document.getElementById('cancelled-prompt').textContent = taskData.description;
         document.getElementById('cancelled-acceptance').textContent = taskData.acceptance;
@@ -1017,7 +905,6 @@ function addTask(taskData) {
         document.getElementById('cancelled-progress-label').textContent = `Progress: ${Math.round(taskData.progress)}%`;
         document.getElementById('cancelled-progress-fill').style.width = taskData.progress + '%';
 
-        // Set priority badge
         const priorityBadge = document.getElementById('cancelled-priority-badge');
         priorityBadge.textContent = taskData.priority.charAt(0).toUpperCase() + taskData.priority.slice(1);
         
@@ -1039,10 +926,7 @@ function addTask(taskData) {
         cancelledModal.style.display = 'none';
     }
 
-    // Event listeners for cancelled modal
     cancelledClose.addEventListener('click', closeCancelledModal);
-
-    // Close modal when clicking outside
     cancelledModal.addEventListener('click', (e) => {
         if (e.target === cancelledModal) {
             closeCancelledModal();

@@ -6,7 +6,7 @@ const TaskCard = ({ task, columnKey, onClick }) => {
   const handleDragStart = (e) => {
     setIsDragging(true);
     e.dataTransfer.setData('text/plain', JSON.stringify({
-      taskId: task.id,
+      taskId: task.taskid,
       fromColumn: columnKey
     }));
     e.dataTransfer.effectAllowed = 'move';
@@ -19,49 +19,51 @@ const TaskCard = ({ task, columnKey, onClick }) => {
   const handleClick = (e) => {
     e.preventDefault();
     if (onClick) {
-      onClick();
+      onClick(task, columnKey);
     }
   };
 
-  const getTaskClasses = () => {
-    let classes = 'task';
-    if (columnKey === 'inReview') classes += ' review-task';
-    if (isDragging) classes += ' dragging';
-    return classes;
+  const getPriorityClass = (priority) => {
+    if (!priority) return '';
+    return priority.toLowerCase();
   };
 
   return (
     <div
-      className={getTaskClasses()}
-      draggable
+      className={`task ${isDragging ? 'dragging' : ''}`}
+      draggable="true"
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onClick={handleClick}
-      style={{
-        opacity: columnKey === 'done' ? '0.8' : columnKey === 'cancelled' ? '0.6' : '1',
-        background: columnKey === 'done' ? '#f0fff0' : columnKey === 'cancelled' ? '#ffe6e6' : undefined
-      }}
+      style={{ display: 'block' }}
+      taskid={task.taskid}
+      status={task.status}
+      title={task.title}
+      priority={task.priority}
+      repo={task.repo}
+      agentid={task.agentId || task.agentid}
+      assignedagent={task.assignedAgent}
+      description={task.description}
+      requirements={JSON.stringify(task.requirements || [])}
+      acceptcrit={JSON.stringify(task.acceptCrit || [])}
+      agentprocess={task.agentProcess || ''}
     >
-      <div className="task-title">{task.title}</div>
-      <div className={`task-priority ${task.priority.toLowerCase()}`}>
-        {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority
+      <div className="task-title">{task.title || 'Untitled Task'}</div>
+      <div className={`task-priority ${getPriorityClass(task.priority)}`}>
+        {task.priority ? `${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority` : 'Medium Priority'}
       </div>
-      <div className="progress">
-        <div 
-          className="progress-fill" 
-          style={{ width: `${task.progress}%` }}
-        />
-      </div>
-      {columnKey === 'inReview' && (
-        <div className="ai-progress">
-          AI Progress: {task.description ? task.description.substring(0, 50) + '...' : 'Completed'}
+
+      {task.progress !== undefined && (
+        <div className="progress">
+          <div 
+            className="progress-fill" 
+            style={{ width: `${task.progress}%` }}
+          />
         </div>
       )}
-      <div>Agent: {task.agent}</div>
-      <div>Repo: {task.repo}</div>
-      {task.status && (
-        <div>Status: {task.status}</div>
-      )}
+
+      <div className="agentSelected">Agent: {task.assignedAgent || 'Unknown'}</div>
+      <div className="repoSelected">Repo: {task.repo || 'No repo'}</div>
     </div>
   );
 };

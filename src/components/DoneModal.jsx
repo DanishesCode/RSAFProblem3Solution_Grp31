@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ReviewModal = ({ task, onClose, onDecision }) => {
+const DoneModal = ({ task, onClose }) => {
   if (!task) return null;
 
   const getPriorityStyle = () => {
@@ -30,16 +30,16 @@ const ReviewModal = ({ task, onClose, onDecision }) => {
   };
 
   const acceptance = parseArray(task.acceptCrit);
-  const progress = task.progress || 0;
+  const progress = task.progress || 100;
   const agentName = task.assignedAgent || 'Unknown';
 
   return (
-    <div id="reviewModal" className="review-modal" style={{ display: 'flex' }}>
+    <div id="doneModal" className="review-modal" style={{ display: 'flex' }}>
       <div className="review-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="review-modal-header">
-          <span className="review-close" onClick={onClose}>&times;</span>
-          <h3 id="review-task-title">{task.title || 'Untitled Task'}</h3>
-          <div id="review-priority-badge" className="priority-badge" style={getPriorityStyle()}>
+          <span className="done-close" onClick={onClose}>&times;</span>
+          <h3 id="done-task-title">{task.title || 'Untitled Task'}</h3>
+          <div id="done-priority-badge" className="priority-badge" style={getPriorityStyle()}>
             {(task.priority || 'medium').charAt(0).toUpperCase() + (task.priority || 'medium').slice(1)}
           </div>
         </div>
@@ -47,35 +47,35 @@ const ReviewModal = ({ task, onClose, onDecision }) => {
         <div className="review-modal-body">
           <div className="review-section">
             <label>Prompt used:</label>
-            <div className="prompt-box" id="review-prompt">
+            <div className="prompt-box" id="done-prompt">
               {task.description || 'No prompt provided'}
             </div>
           </div>
 
           <div className="review-section">
             <label>Acceptance</label>
-            <div className="acceptance-box" id="review-acceptance">
+            <div className="acceptance-box" id="done-acceptance">
               {acceptance || 'No acceptance criteria provided'}
             </div>
           </div>
 
           <div className="review-section">
             <label>Appended Code</label>
-            <button className="repo-link" id="review-repo-link">
-              📁 <span id="review-repo-name">In {(task.repo || 'Repository').split('/').pop()}</span>
+            <button className="repo-link" id="done-repo-link">
+              📁 <span id="done-repo-name">In {(task.repo || 'Repository').split('/').pop()}</span>
               <span className="expand-icon">⤢</span>
             </button>
-            <div className="code-info" id="review-code-changes">
+            <div className="code-info" id="done-code-changes">
               {task.agentProcess || 'Shows github and changed code in the github'}
             </div>
           </div>
 
           <div className="review-section">
-            <label id="review-progress-label">Progress: {Math.round(progress)}%</label>
+            <label id="done-progress-label">Progress: {Math.round(progress)}%</label>
             <div className="progress-bar">
               <div 
                 className="progress-fill-modal" 
-                id="review-progress-fill"
+                id="done-progress-fill"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -86,23 +86,18 @@ const ReviewModal = ({ task, onClose, onDecision }) => {
             <div className="agent-info">
               <div className="agent-icon">🤖</div>
               <div className="agent-details">
-                <div className="agent-name" id="review-agent-name">{agentName}</div>
-                <div className="agent-status-modal" id="review-agent-status">
+                <div className="agent-name" id="done-agent-name">{agentName}</div>
+                <div className="agent-status-modal" id="done-agent-status">
                   Workload: {task.workload || 61}% Performance: {task.performance || 40}%
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        <div className="review-modal-footer">
-          <button className="btn-try-again" id="review-retry" onClick={() => onDecision('retry')}>
-            Try Again
-          </button>
-        </div>
       </div>
     </div>
   );
 };
 
-export default ReviewModal;
+export default DoneModal;
+
