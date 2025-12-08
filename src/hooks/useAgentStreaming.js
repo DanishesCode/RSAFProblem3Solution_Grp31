@@ -2,28 +2,54 @@ import { useEffect, useRef } from 'react';
 
 export function useAgentStreaming(tasks, onUpdateTask) {
   const streamingTasks = useRef(new Set());
+  const onUpdateTaskRef = useRef(onUpdateTask);
+  const processedTasksRef = useRef(new Set());
+
+  // Keep the ref updated
+  useEffect(() => {
+    onUpdateTaskRef.current = onUpdateTask;
+  }, [onUpdateTask]);
 
   useEffect(() => {
+    if (!tasks || tasks.length === 0) return;
+    
     const progressTasks = tasks.filter(t => t.status === 'progress');
     
     progressTasks.forEach(task => {
       const taskId = task.taskid;
+      const taskKey = `${taskId}-${task.status}`;
       
       // Skip if already streaming
       if (streamingTasks.current.has(taskId)) return;
       
+      // Skip if we've already processed this task in this status
+      if (processedTasksRef.current.has(taskKey)) return;
+      
       const agent = task.assignedAgent;
-      if (!agent || agent === 'Claude') return; // Claude doesn't stream
+      if (!agent || agent === 'Claude') {
+        processedTasksRef.current.add(taskKey);
+        return; // Claude doesn't stream
+      }
       
       // Start streaming for Gemini or OpenAI
       if (agent === 'Gemini' || agent === 'OpenAI') {
         streamingTasks.current.add(taskId);
-        startStreaming(task, onUpdateTask, () => {
+        processedTasksRef.current.add(taskKey);
+        startStreaming(task, onUpdateTaskRef.current, () => {
           streamingTasks.current.delete(taskId);
         });
       }
     });
-  }, [tasks, onUpdateTask]);
+    
+    // Clean up processed tasks that are no longer in progress
+    const currentProgressIds = new Set(progressTasks.map(t => t.taskid));
+    processedTasksRef.current.forEach(key => {
+      const taskId = key.split('-')[0];
+      if (!currentProgressIds.has(taskId)) {
+        processedTasksRef.current.delete(key);
+      }
+    });
+  }, [tasks]);
 }
 
 async function startStreaming(task, onUpdateTask, onComplete) {

@@ -26,7 +26,7 @@ const Dashboard = () => {
       try {
         const userId = localStorage.getItem('userId');
         if (!userId) {
-          navigate('/login');
+          navigate('/login', { replace: true });
           return;
         }
         const userLogs = await initializeLogs(userId);
@@ -37,7 +37,8 @@ const Dashboard = () => {
       }
     };
     loadLogs();
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const repos = React.useMemo(() => {
     const reposString = localStorage.getItem('repos');

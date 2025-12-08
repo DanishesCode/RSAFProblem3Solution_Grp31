@@ -17,7 +17,7 @@ const Header = ({
 
   return (
     <header>
-      <div className="brand" onClick={() => window.location.reload()}>
+      <div className="brand" onClick={() => navigate('/')}>
         <div className="logo">AI</div>
         <div>Agentic</div>
       </div>

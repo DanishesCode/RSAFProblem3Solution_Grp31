@@ -85,31 +85,25 @@ async function setupVite() {
     }
 }
 
-// Serve React app in production
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, 'dist')));
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-    });
-} else {
-    // In development, serve index.html for all non-API routes
-    app.get('*', async (req, res, next) => {
-        // Skip API routes
-        if (req.path.startsWith('/github') || 
-            req.path.startsWith('/backlog') || 
-            req.path.startsWith('/ai') ||
-            req.path.startsWith('/login') ||
-            req.path.startsWith('/dashboard')) {
-            return next();
-        }
-        // Serve index.html for React routes
-        res.sendFile(path.join(__dirname, 'index.html'));
-    });
-}
-
 // Start server
 async function startServer() {
     await setupVite();
+    
+    // Serve React app - set up after Vite middleware
+    if (process.env.NODE_ENV === 'production') {
+        app.use(express.static(path.join(__dirname, 'dist')));
+        // Catch-all handler for SPA routing in production
+        app.use((req, res) => {
+            // Skip if it's an API route
+            if (req.path.startsWith('/github') || 
+                req.path.startsWith('/backlog') || 
+                req.path.startsWith('/ai')) {
+                return res.status(404).send('Not found');
+            }
+            res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+        });
+    }
+    // In development, Vite middleware handles all non-API routes
     
     app.listen(port, async () => {
         try {

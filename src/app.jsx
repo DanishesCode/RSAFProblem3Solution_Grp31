@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from './components/Header';
 import AgentSection from './components/AgentSection';
 import KanbanBoard from './components/KanbanBoard';
@@ -15,6 +16,7 @@ import { useAgentStreaming } from './hooks/useAgentStreaming';
 import './styles.css';
 
 function App() {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [agents, setAgents] = useState([
     { id: 1, name: 'Claude', status: 'working', workload: 0 },
@@ -33,19 +35,34 @@ function App() {
   const [notifications, setNotifications] = useState([]);
   const [inProgressTask, setInProgressTask] = useState(null);
   const [repos, setRepos] = useState([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    // Initialize auth state from localStorage immediately
+    return !!localStorage.getItem('githubId');
+  });
 
-  // Check authentication
+  // Check authentication - only run once on mount
   useEffect(() => {
-    if (!localStorage.getItem('githubId')) {
-      window.location.href = '/login';
+    const githubId = localStorage.getItem('githubId');
+    if (!githubId) {
+      // Only navigate if we're not already on login page
+      if (window.location.pathname !== '/login') {
+        navigate('/login', { replace: true });
+      }
       return;
     }
     
+    // Only set authenticated if not already set
+    if (!isAuthenticated) {
+      setIsAuthenticated(true);
+    }
+    
+    // Load repos
     const reposString = localStorage.getItem('repos');
     if (reposString) {
       setRepos(reposString.split(',').filter(Boolean));
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - only run once on mount
 
   // Handle task update
   const handleUpdateTask = useCallback(async (taskId, updates) => {
@@ -54,11 +71,36 @@ function App() {
     ));
   }, []);
 
-  // Load initial tasks
+  // Update agent workload
+  const updateAgentWorkload = useCallback((taskList) => {
+    const agentWork = { 1: 0, 2: 0, 3: 0 };
+    
+    if (taskList && taskList.length > 0) {
+      taskList
+        .filter(task => task.status === 'progress')
+        .forEach(task => {
+          const agentId = task.agentId || task.agentid;
+          if (agentId && agentWork.hasOwnProperty(agentId)) {
+            agentWork[agentId] += 20;
+          }
+        });
+    }
+
+    setAgents(prev => prev.map(agent => ({
+      ...agent,
+      workload: agentWork[agent.id] || 0,
+      status: agentWork[agent.id] > 0 ? 'working' : 'offline'
+    })));
+  }, []);
+
+  // Load initial tasks - only when authenticated
   useEffect(() => {
+    if (!isAuthenticated) return;
+    
     const loadTasks = async () => {
       try {
         const userId = localStorage.getItem('userId');
+        if (!userId) return;
         const logs = await initializeLogs(userId);
         setTasks(logs);
         updateAgentWorkload(logs);
@@ -66,31 +108,14 @@ function App() {
         console.error('Error loading tasks:', error);
       }
     };
-    loadTasks();
-  }, []);
-
-  // Handle AI agent streaming
-  useAgentStreaming(tasks, handleUpdateTask);
-
-  // Update agent workload
-  const updateAgentWorkload = useCallback((taskList = tasks) => {
-    const agentWork = { 1: 0, 2: 0, 3: 0 };
     
-    taskList
-      .filter(task => task.status === 'progress')
-      .forEach(task => {
-        const agentId = task.agentId || task.agentid;
-        if (agentId && agentWork.hasOwnProperty(agentId)) {
-          agentWork[agentId] += 20;
-        }
-      });
+    loadTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]); // Only run when authentication status changes
 
-    setAgents(prev => prev.map(agent => ({
-      ...agent,
-      workload: agentWork[agent.id] || 0,
-      status: agentWork[agent.id] > 0 ? 'working' : 'offline'
-    })));
-  }, [tasks]);
+  // Handle AI agent streaming - only when authenticated
+  // Temporarily disable to prevent refresh loops - will re-enable after fixing
+  // useAgentStreaming(isAuthenticated ? tasks : [], handleUpdateTask);
 
   // Add notification
   const notify = useCallback((message, duration = 2500, type = 'error') => {
@@ -283,6 +308,11 @@ function App() {
       default: return 'Unknown';
     }
   };
+
+  // Don't render if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="App">

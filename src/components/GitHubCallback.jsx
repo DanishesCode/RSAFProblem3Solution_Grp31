@@ -17,11 +17,11 @@ const GitHubCallback = () => {
         
         if (githubId && userId) {
           // Already authenticated, redirect to main app
-          navigate('/');
+          navigate('/', { replace: true });
           return;
         } else {
           // No auth data, redirect to login
-          navigate('/login');
+          navigate('/login', { replace: true });
           return;
         }
       }
@@ -32,7 +32,8 @@ const GitHubCallback = () => {
     };
 
     handleCallback();
-  }, [searchParams, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]); // Only depend on searchParams, navigate is stable
 
   return (
     <div style={{ 

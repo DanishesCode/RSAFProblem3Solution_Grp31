@@ -17,7 +17,8 @@ const FilterPanel = ({ tasks, onClose, onFilterChange }) => {
 
   useEffect(() => {
     onFilterChange({ repos: selectedRepos, agents: selectedAgents });
-  }, [selectedRepos, selectedAgents, onFilterChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRepos, selectedAgents]); // onFilterChange is stable, don't include it
 
   const handleRepoToggle = (repo) => {
     setSelectedRepos(prev => 

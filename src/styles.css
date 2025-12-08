@@ -24,6 +24,22 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+#root {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+}
+
+.App {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
 }
 
 header {
@@ -33,6 +49,8 @@ header {
     padding: 14px 20px;
     background: var(--panel);
     border-radius: 8px;
+    margin: 10px;
+    flex-shrink: 0;
 }
 
 .brand {
@@ -87,10 +105,11 @@ header {
     display: flex;
     gap: 12px;
     background: var(--panel);
-    margin: 10px;
+    margin: 0 10px 10px 10px;
     padding: 10px;
     border-radius: 10px;
     overflow-x: auto;
+    flex-shrink: 0;
 }
 
 .agent {
