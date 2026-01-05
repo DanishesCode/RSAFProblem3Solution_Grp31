@@ -2,6 +2,7 @@ const express = require('express');
 const sql = require('mssql');
 const dotenv = require('dotenv');
 const path = require("path");
+const http = require("http");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const passport = require("passport");
@@ -61,7 +62,6 @@ app.put("/backlog/status-update", taskController.updateStatus);
 
 // ----- GEMINI API -----
 app.post('/ai/gemini/generate', GeminiController.generateResponse);
-app.post('/ai/gemini/stream', GeminiController.streamResponse);
 
 // ----- CHATGPT / OPENAI API -----
 app.post('/ai/openai/generate', OpenAIController.generateResponse);
@@ -73,11 +73,21 @@ async function setupVite() {
         try {
             const { createServer } = require('vite');
             const vite = await createServer({
-                server: { middlewareMode: true },
+                server: {
+                    middlewareMode: true,
+                    // Disable HMR to remove websocket connections entirely
+                    hmr: false,
+                    watch: {
+                        // Ignore editor/backup/temp files and common folders
+                        ignored: ['**/*.old', '**/*.tmp', '**/*~', '**/*.swp', '**/.git/**', '**/node_modules/**']
+                    }
+                },
                 appType: 'spa',
                 root: __dirname
             });
             app.use(vite.middlewares);
+            // Expose vite instance so we can inspect WS status from logs if needed
+            globalThis.vite = vite;
             console.log('Vite middleware integrated');
         } catch (error) {
             console.error('Error setting up Vite:', error);
@@ -105,7 +115,10 @@ async function startServer() {
     }
     // In development, Vite middleware handles all non-API routes
     
-    app.listen(port, async () => {
+    // Create HTTP server explicitly so Vite's WebSocket server can attach reliably
+    const server = http.createServer(app);
+
+    server.listen(port, async () => {
         try {
             await sql.connect(dbConfig);
             console.log("Database connected");
@@ -117,6 +130,17 @@ async function startServer() {
         console.log(`Server running on port ${port}`);
         console.log(`React app available at http://localhost:${port}`);
     });
+
+    // Helpful diagnostics: log WS connections/disconnections
+    try {
+        const ws = globalThis.vite?.ws;
+        if (ws && ws.on) {
+            ws.on('connection', () => console.log('Vite WS client connected'));
+            ws.on('close', () => console.log('Vite WS client disconnected'));
+        }
+    } catch (e) {
+        // ignore - diagnostics only
+    }
 }
 
 startServer();
