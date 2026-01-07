@@ -1,6 +1,6 @@
 # RSAFProblem3Solution_Grp31
 # RSAF Problem 3 – Firestore Migration
-
+IMPORTANT: Currently, Gemini AI and status updates (during drag and drop) DO NOT FUNCTION AS INTENDED. Will fix soon
 This project uses **Firebase Firestore** as the backend database via the **Firebase Admin SDK**.
 
 ## ⚠️ Important: Secrets are NOT included
