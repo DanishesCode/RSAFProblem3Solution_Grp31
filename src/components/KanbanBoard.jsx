@@ -3,12 +3,16 @@ import KanbanColumn from './KanbanColumn';
 
 const KanbanBoard = ({ tasks, onTaskClick, onTaskMove }) => {
   const columns = [
-    { key: 'toDo', title: 'To Do', tasks: tasks.toDo },
-    { key: 'inProgress', title: 'In Progress', tasks: tasks.inProgress },
-    { key: 'inReview', title: 'In Review', tasks: tasks.inReview },
-    { key: 'done', title: 'Done', tasks: tasks.done },
-    { key: 'cancelled', title: 'Cancelled', tasks: tasks.cancelled }
+    { key: 'toDo', title: 'To Do' },
+    { key: 'progress', title: 'In Progress' },
+    { key: 'review', title: 'In Review' },
+    { key: 'done', title: 'Done' },
+    { key: 'cancel', title: 'Cancelled' }
   ];
+
+  const getTasksForColumn = (columnKey) => {
+    return tasks.filter(task => task.status === columnKey);
+  };
 
   return (
     <main>
@@ -17,7 +21,7 @@ const KanbanBoard = ({ tasks, onTaskClick, onTaskMove }) => {
           key={column.key}
           columnKey={column.key}
           title={column.title}
-          tasks={column.tasks}
+          tasks={getTasksForColumn(column.key)}
           onTaskClick={onTaskClick}
           onTaskMove={onTaskMove}
         />

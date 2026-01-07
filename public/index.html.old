@@ -1,0 +1,375 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="src/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+    <title>AI Agent Kanban Dashboard</title>
+</head>
+
+<body>
+    <header>
+        <div id="notification-container"></div>
+
+        <div class="brand">
+            <div class="logo">AI</div>
+            <div>Agentic</div>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" placeholder="Search tasks...">
+            <div class="search-actions">
+                <button class="btn-filter" id="open-filter">Filter</button>
+                <button class="btn-dashboard" id="open-dashboard">Dashboard</button>
+            </div>
+            
+        </div>
+
+        <!-- FILTER PANEL DROPDOWN -->
+        <div id="filterPanel" class="filter-panel hidden" aria-hidden="true">
+            <div class="filter-panel-inner">
+                <div class="filter-header">
+                    <strong>Filter Tasks</strong>
+                    <button id="close-filter" class="close-filter">✕</button>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-section-title">Repository</div>
+                    <div id="filter-repos"></div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-section-title">Agent</div>
+                    <div id="filter-agents"></div>
+                </div>
+
+                <div class="filter-actions">
+                    <button id="clear-filters" class="filter-clear">Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="top-buttons">
+            <button class="btn-activity" id="open-activity">Activity</button>
+            <button class="btn-new">+ New Task</button>
+        </div>
+    </header>
+
+    <section class="agents">
+        <div class="agent">
+            <div>
+                <div>Claude</div>
+                <div class="agent-status working">Working - 0%</div>
+            </div>
+        </div>
+
+        <div class="agent">
+            <div>
+                <div>Gemini</div>
+                <div class="agent-status offline">Working - 0%</div>
+            </div>
+        </div>
+
+        <div class="agent">
+            <div>
+                <div>OpenAI</div>
+                <div class="agent-status working">Working - 0%</div>
+            </div>
+        </div>
+    </section>
+
+    <main>
+        <!-- TO DO COLUMN -->
+        <div class="column" type="toDo">
+            <div class="column-header">To Do</div>
+            <div class="task-list">
+                <!-- TEMPLATE TASK (Hidden but used for cloning) -->
+                <div class="task" draggable="true" taskid="TEMPLATE" userid="0" status="toDo"
+                    title="Example Task Title" description="This is a detailed description."
+                    priority="high" requirements="Requirement1"
+                    acceptCrit="Acceptance criteria"
+                    agentid="1" repo="node-api-server" agentProcess="Backend processing">
+
+                    <div class="task-title">Template</div>
+                    <div class="task-priority">High Priority</div>
+
+                    <div class="progress">
+                        <div class="progress-fill" style="width: 0%"></div>
+                    </div>
+
+                    <div class="agentSelected">Agent: Claude</div>
+                    <div class="repoSelected">Repo: node-api-server</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IN PROGRESS COLUMN -->
+        <div class="column" type="progress">
+            <div class="column-header">In Progress</div>
+            <div class="task-list"></div>
+        </div>
+
+        <!-- IN REVIEW COLUMN -->
+        <div class="column" type="review">
+            <div class="column-header">In Review</div>
+            <div class="task-list"></div>
+        </div>
+
+        <!-- DONE COLUMN -->
+        <div class="column" type="done">
+            <div class="column-header">Done</div>
+            <div class="task-list"></div>
+        </div>
+
+        <!-- CANCELLED COLUMN -->
+        <div class="column" type="cancel">
+            <div class="column-header">Cancelled</div>
+            <div class="task-list"></div>
+        </div>
+
+        <!-- CREATE TASK MODAL -->
+        <div id="addNewTaskPanel">
+            <div class="modal-overlay">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>Create New Task</h2>
+                        <button class="close-btn">✕</button>
+                    </div>
+
+                    <div class="modal-body">
+                        <label>Task Title</label>
+                        <input type="text" placeholder="Enter task title..." />
+
+                        <label>Description</label>
+                        <textarea type="text" placeholder="Describe the task in detail..."></textarea>
+
+                        <label>Priority</label>
+                        <select>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                            <option value="high">High</option>
+                        </select>
+
+                        <label>Required Capabilities</label>
+                        <div class="tags">
+                            <span value="frontend">frontend</span>
+                            <span value="backend">backend</span>
+                            <span value="ui-ux">ui-ux</span>
+                        </div>
+
+                         <label>Requirements</label>
+                         <div id="requirements-container"></div>
+
+                         <label>Acceptance Criteria</label>
+                         <div id="acceptance-container"></div>
+
+                        <label class="github-label">Select GitHub Project</label>
+                        <div class="github-projects"></div>
+
+                        <label class="assign-label">Assign Agent</label>
+
+                        <div class="agent-card" value="Claude" filter="backend" agentId="1">
+                            <div>
+                                <strong>Claude</strong>
+                                <p>Workload: 0% • Performance: 88%</p>
+                            </div>
+                        </div>
+
+                        <div class="agent-card" value="Gemini" filter="frontend" agentId="2">
+                            <div>
+                                <strong>Gemini</strong>
+                                <p>Workload: 0% • Performance: 95%</p>
+                            </div>
+                        </div>
+
+                        <div class="agent-card" value="OpenAi" filter="ui-ux" agentId="3">
+                            <div>
+                                <strong>OpenAi</strong>
+                                <p>Workload: 0% • Performance: 90%</p>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button class="cancel">Cancel</button>
+                            <button id="createBtn" class="create">Create Task</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIVITY SIDEBAR -->
+        <div id="activity-sidebar" class="activity-sidebar">
+            <div class="activity-header">
+                <h2>Live Activity</h2>
+                <button id="close-activity">✕</button>
+            </div>
+
+            <div id="activity-content" class="activity-content">
+                <!-- Events will be injected here -->
+            </div>
+        </div>
+
+        <!-- REVIEW MODAL -->
+        <div id="reviewModal" class="review-modal" style="display: none;">
+            <div class="review-modal-content">
+                <div class="review-modal-header">
+                    <span class="review-close">&times;</span>
+                    <h3 id="review-task-title"></h3>
+                    <div id="review-priority-badge" class="priority-badge"></div>
+                </div>
+                
+                <div class="review-modal-body">
+                    <div class="review-section">
+                        <label>Prompt used:</label>
+                        <div class="prompt-box" id="review-prompt"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Acceptance</label>
+                        <div class="acceptance-box" id="review-acceptance"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Appended Code</label>
+                        <button class="repo-link" id="review-repo-link">
+                            📁 <span id="review-repo-name"></span>
+                            <span class="expand-icon">⤢</span>
+                        </button>
+                        <div class="code-info" id="review-code-changes"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label id="review-progress-label">Progress: 0%</label>
+                        <div class="progress-bar">
+                            <div class="progress-fill-modal" id="review-progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Assigned AI Agent</label>
+                        <div class="agent-info">
+                            <div class="agent-icon">🤖</div>
+                            <div class="agent-details">
+                                <div class="agent-name" id="review-agent-name"></div>
+                                <div class="agent-status-modal" id="review-agent-status"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="review-modal-footer">
+                    <button class="btn-try-again" id="review-retry">Try Again</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DONE MODAL (View only, no buttons) -->
+        <div id="doneModal" class="review-modal" style="display: none;">
+            <div class="review-modal-content">
+                <div class="review-modal-header">
+                    <span class="done-close">&times;</span>
+                    <h3 id="done-task-title"></h3>
+                    <div id="done-priority-badge" class="priority-badge"></div>
+                </div>
+                
+                <div class="review-modal-body">
+                    <div class="review-section">
+                        <label>Prompt used:</label>
+                        <div class="prompt-box" id="done-prompt"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Acceptance</label>
+                        <div class="acceptance-box" id="done-acceptance"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Appended Code</label>
+                        <button class="repo-link" id="done-repo-link">
+                            📁 <span id="done-repo-name"></span>
+                            <span class="expand-icon">⤢</span>
+                        </button>
+                        <div class="code-info" id="done-code-changes"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label id="done-progress-label">Progress: 0%</label>
+                        <div class="progress-bar">
+                            <div class="progress-fill-modal" id="done-progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Assigned AI Agent</label>
+                        <div class="agent-info">
+                            <div class="agent-icon">🤖</div>
+                            <div class="agent-details">
+                                <div class="agent-name" id="done-agent-name"></div>
+                                <div class="agent-status-modal" id="done-agent-status"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CANCELLED MODAL (View only, no buttons) -->
+        <div id="cancelledModal" class="review-modal" style="display: none;">
+            <div class="review-modal-content">
+                <div class="review-modal-header">
+                    <span class="cancelled-close">&times;</span>
+                    <h3 id="cancelled-task-title"></h3>
+                    <div id="cancelled-priority-badge" class="priority-badge"></div>
+                </div>
+                
+                <div class="review-modal-body">
+                    <div class="review-section">
+                        <label>Prompt used:</label>
+                        <div class="prompt-box" id="cancelled-prompt"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Acceptance</label>
+                        <div class="acceptance-box" id="cancelled-acceptance"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Appended Code</label>
+                        <button class="repo-link" id="cancelled-repo-link">
+                            📁 <span id="cancelled-repo-name"></span>
+                            <span class="expand-icon">⤢</span>
+                        </button>
+                        <div class="code-info" id="cancelled-code-changes"></div>
+                    </div>
+
+                    <div class="review-section">
+                        <label id="cancelled-progress-label">Progress: 0%</label>
+                        <div class="progress-bar">
+                            <div class="progress-fill-modal" id="cancelled-progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <div class="review-section">
+                        <label>Assigned AI Agent</label>
+                        <div class="agent-info">
+                            <div class="agent-icon">🤖</div>
+                            <div class="agent-details">
+                                <div class="agent-name" id="cancelled-agent-name"></div>
+                                <div class="agent-status-modal" id="cancelled-agent-status"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="src/script.js"></script>
+    <script src="dragAndDrop.js"></script>
+    <script src="src/inPrg.js"></script>
+    <script src = "aiAgents.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+</body>
+</html>

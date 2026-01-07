@@ -1,19 +1,39 @@
 {
+  "name": "rsaf-problem3-solution",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "node app.js",
+    "build": "vite build",
+    "preview": "vite preview",
+    "server": "node app.js",
+    "start": "NODE_ENV=production node app.js",
+    "dev:all": "node app.js"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.13.2",
+    "chart.js": "^4.4.0",
     "cookie-parser": "^1.4.7",
     "cookieparser": "^0.1.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
+    "firebase-admin": "^13.6.0",
     "jsonwebtoken": "^9.0.2",
     "mssql": "^12.0.0",
     "openai": "^6.9.1",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
     "path": "^0.12.7",
-    "react": "^19.2.0"
+    "react": "^19.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^6.26.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^8.2.2",
+    "vite": "^5.4.0"
   }
 }
