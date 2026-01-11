@@ -5,12 +5,12 @@ const http = require("http");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const passport = require("passport");
-
+// Load env
+dotenv.config();
 const githubController = require("./controllers/githubController");
 const taskController = require("./controllers/taskController");
 const GeminiController = require('./controllers/geminiController');
 const OpenAIController = require('./controllers/openaiController');
-
 // Load env
 dotenv.config();
 
