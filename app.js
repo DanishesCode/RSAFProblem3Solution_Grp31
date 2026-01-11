@@ -12,6 +12,10 @@ const taskController = require("./controllers/taskController");
 const GeminiController = require('./controllers/geminiController');
 const OpenAIController = require('./controllers/openaiController');
 
+// Load env
+dotenv.config();
+
+// Initialize app
 const app = express();
 const port = process.env.PORT || 3000;
 
