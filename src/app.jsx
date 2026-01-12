@@ -10,6 +10,8 @@ import CancelledModal from './components/CancelledModal';
 import ActivitySidebar from './components/ActivitySidebar';
 import InProgressPanel from './components/InProgressPanel';
 import NotificationContainer from './components/NotificationContainer';
+import SelectionPage from './components/SelectionPage';
+import MyBoards from './components/MyBoards';
 import { initializeLogs, saveBacklog, updateTaskStatus } from './services/api';
 import { isValidTransition } from './utils/taskTransitions';
 import { useAgentStreaming } from './hooks/useAgentStreaming';
