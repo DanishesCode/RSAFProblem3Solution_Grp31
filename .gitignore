@@ -136,3 +136,6 @@ dist
 .pnp.*
 
 .env
+
+# Firebase Admin secrets
+secrets/

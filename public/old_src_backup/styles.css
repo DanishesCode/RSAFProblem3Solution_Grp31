@@ -5,9 +5,6 @@
     --muted: #D9CFC7;
     --accent: #C9B59C;
     --font: 'Montserrat', sans-serif;
-    --sidebar-bg: #fff;
-    --sidebar-border: #e0e0e0;
-    --sidebar-shadow: rgba(0,0,0,0.1);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,22 +21,6 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    margin: 0;
-    padding: 0;
-}
-
-#root {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    width: 100%;
-}
-
-.App {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    width: 100%;
 }
 
 header {
@@ -49,8 +30,6 @@ header {
     padding: 14px 20px;
     background: var(--panel);
     border-radius: 8px;
-    margin: 10px;
-    flex-shrink: 0;
 }
 
 .brand {
@@ -83,12 +62,6 @@ header {
     font-family: var(--font);
 }
 
-.search-actions {
-    display: flex;
-    gap: 8px;
-    margin-left: 8px;
-}
-
 .top-buttons button {
     margin-left: 10px;
     padding: 8px 12px;
@@ -105,11 +78,10 @@ header {
     display: flex;
     gap: 12px;
     background: var(--panel);
-    margin: 0 10px 10px 10px;
+    margin: 10px;
     padding: 10px;
     border-radius: 10px;
     overflow-x: auto;
-    flex-shrink: 0;
 }
 
 .agent {
@@ -173,22 +145,13 @@ main {
 }
 
 .task {
-    display: block;
+    display:none;
     background: white;
     border-radius: 10px;
     padding: 10px;
     margin-bottom: 10px;
     font-size: 14px;
     cursor: pointer;
-}
-
-.task.dragging {
-    opacity: 0.5;
-}
-
-.column.drag-over {
-    background: #f0f0f0;
-    border: 2px dashed var(--accent);
 }
 
 .task-title { 
@@ -328,11 +291,9 @@ main {
     cursor: pointer;
   }
   
-  .tags span.selected {
-    background-color: #4caf50;
+  .tags span.active {
+    background: #000;
     color: white;
-    border-radius: 4px;
-    padding: 2px 6px;
   }
   
   /* ===== Add Requirement/Criteria Row ===== */
@@ -386,9 +347,8 @@ main {
   }
   
   .repo-card.selected {
-    border: 2px solid #4caf50;
-    border-radius: 6px;
-    background-color: #f0fff0;
+    border-color: #000;
+    background: #eaeaea;
   }
   
   .repo-card p {
@@ -459,7 +419,20 @@ main {
     border-radius: 6px;
     cursor: pointer;
   }
+  .tags span.selected {
+    background-color: #4caf50;
+    color: white;
+    border-radius: 4px;
+    padding: 2px 6px;
+}
 
+.repo-card.selected {
+    border: 2px solid #4caf50;
+    border-radius: 6px;
+    background-color: #f0fff0;
+}
+
+  
 #createBtn.save,
 #createBtn.create.save {
   background: #61b464 !important;
@@ -761,7 +734,7 @@ main {
   position: relative;
 }
 
-.review-close, .done-close, .cancelled-close {
+.review-close {
   position: absolute;
   top: 15px;
   right: 20px;
@@ -772,7 +745,7 @@ main {
   line-height: 1;
 }
 
-.review-close:hover, .done-close:hover, .cancelled-close:hover {
+.review-close:hover {
   color: #333;
 }
 
@@ -915,100 +888,4 @@ main {
 
 .btn-try-again:hover {
   background: #5a6268;
-}
-
-/* In Progress Panel Styles */
-#inprg-panel {
-    position: fixed;
-    right: 24px;
-    top: 24px;
-    width: min(720px, 88vw);
-    max-height: 84vh;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.28);
-    z-index: 1400;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-}
-
-#inprg-panel .inprg-header { 
-    padding: 18px 20px; 
-    display:flex; 
-    justify-content:space-between; 
-    align-items:center; 
-    border-bottom:1px solid #eee; 
-}
-
-#inprg-panel h3 { 
-    margin:0; 
-    font-size:20px; 
-}
-
-#inprg-panel .inprg-body { 
-    padding: 16px 20px; 
-    overflow:auto; 
-    flex:1; 
-}
-
-#inprg-panel .inprg-row { 
-    margin-bottom:12px; 
-}
-
-#inprg-panel .badge { 
-    display:inline-block; 
-    padding:6px 10px; 
-    border-radius:999px; 
-    background:#f2f2f2; 
-    font-size:13px; 
-}
-
-#inprg-panel .thinking { 
-    background:#fafafa; 
-    border:1px solid #eee; 
-    padding:12px; 
-    min-height:160px; 
-    max-height:44vh; 
-    overflow:auto; 
-    white-space:pre-wrap; 
-    font-family: monospace; 
-    font-size:13px; 
-    border-radius:8px;
-}
-
-#inprg-panel .inprg-footer { 
-    padding:12px 16px; 
-    border-top:1px solid #eee; 
-    display:flex; 
-    gap:8px; 
-    justify-content:flex-end; 
-}
-
-#inprg-panel button { 
-    padding:8px 12px; 
-    border-radius:8px; 
-    border: none; 
-    cursor:pointer; 
-}
-
-#inprg-panel .btn-close { 
-    background:transparent; 
-    font-size:18px; 
-}
-
-#inprg-panel .btn-stop { 
-    background:#ef4444; 
-    color:#fff; 
-}
-
-#inprg-panel .btn-pause { 
-    background:#f59e0b; 
-    color:#fff; 
-}
-
-#inprg-panel .meta { 
-    color:#555; 
-    font-size:13px; 
 }

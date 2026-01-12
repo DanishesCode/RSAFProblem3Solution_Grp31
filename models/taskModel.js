@@ -1,143 +1,95 @@
-const sql = require("mssql");
-const { dbConfig } = require("../dbConfig");
+const { db } = require("../firebaseAdmin");
+
+const TASKS = "task";
+const AGENTS = "agent";
 
 async function createBacklogItem(data) {
-    let connection;
-    try {
-      connection = await sql.connect(dbConfig);
-  
-      const query = `
-        INSERT INTO Backlog (
-          userId, 
-          status, 
-          title, 
-          description, 
-          priority, 
-          requirements, 
-          acceptCrit,
-          agentId,
-          repo,
-          agentProcess
-        )
-        OUTPUT inserted.*
-        VALUES (
-          @userId,
-          @status,
-          @title,
-          @description,
-          @priority,
-          @requirements,
-          @acceptCrit,
-          @agentId,
-          @repo,
-          @agentProcess
-        );
-      `;
-  
-      const request = connection.request();
-  
-      request.input("userId", data.userId);
-      request.input("status", data.status);
-      request.input("title", data.title);
-      request.input("description", data.description);
-      request.input("priority", data.priority);
-      request.input("requirements", JSON.stringify(data.requirements || []));
-      request.input("acceptCrit", JSON.stringify(data.acceptCrit || []));
-      request.input("agentId", data.agentId);
-      request.input("repo", data.repo);
-      request.input("agentProcess", "[]");
-  
-      const result = await request.query(query);
-  
-      return result.recordset[0]; // return created backlog row
-    } catch (error) {
-      console.error("Database error:", error);
-      throw error;
-    } finally {
-      if (connection) {
-        try {
-          await connection.close();
-        } catch (closeError) {
-          console.error("Error closing connection:", closeError);
-        }
-      }
-    }
+  try {
+    const doc = {
+      userId: String(data.userId),
+      agentId: String(data.agentId),
+
+      title: data.title || "",
+      description: data.description || "",
+      priority: data.priority || "medium",
+      status: data.status || "toDo",
+
+      requirements: Array.isArray(data.requirements) ? data.requirements : [],
+      acceptCrit: Array.isArray(data.acceptCrit) ? data.acceptCrit : [],
+      agentProcess: [],
+
+      repo: data.repo || "",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const ref = await db.collection(TASKS).add(doc);
+
+    return {
+      taskId: ref.id,
+      ...doc
+    };
+  } catch (err) {
+    console.error("Firestore createBacklogItem error:", err);
+    throw err;
   }
+}
 
 async function updateBacklogItemStatus(taskId, status) {
-    let connection;
-    try {
-        connection = await sql.connect(dbConfig);
-        
-        const query = `
-            UPDATE Backlog
-            SET status = @status
-            WHERE taskId = @taskId;
-
-            SELECT * FROM Backlog WHERE taskId = @taskId;
-        `;
-        
-        const request = connection.request();
-        
-        request.input("status", status);
-        // The taskId field in your database is an INT, so ensure the input is treated as such.
-        request.input("taskId", sql.Int, parseInt(taskId)); 
-        
-        const result = await request.query(query);
-        
-        return result.recordset[0]; // Return the updated task row
-    } catch (error) {
-        console.error("Database error updating status:", error);
-        throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (closeError) {
-                console.error("Error closing connection:", closeError);
-            }
-        }
-    }
-}
-async function getBacklogsByUserId(userId) {
-  let connection;
   try {
-      connection = await sql.connect(dbConfig);
+    const ref = db.collection(TASKS).doc(String(taskId));
 
-      const query = `
-          SELECT b.*, a.agentName, a.agentSpecial
-          FROM Backlog b
-          JOIN AgentFilter a ON b.agentId = a.agentId
-          WHERE b.userId = @userId;
-      `;
+    await ref.update({
+      status,
+      updatedAt: new Date()
+    });
 
-      const request = connection.request();
+    const snap = await ref.get();
+    if (!snap.exists) return null;
 
-      request.input("userId", sql.Int, parseInt(userId));
-
-      const result = await request.query(query);
-
-      return result.recordset;   // return all backlog rows
-  } catch (error) {
-      console.error("Database error retrieving backlogs:", error);
-      throw error;
-  } finally {
-      if (connection) {
-          try {
-              await connection.close();
-          } catch (closeError) {
-              console.error("Error closing connection:", closeError);
-          }
-      }
+    return {
+      taskId: snap.id,
+      ...snap.data()
+    };
+  } catch (err) {
+    console.error("Firestore updateBacklogItemStatus error:", err);
+    throw err;
   }
 }
 
+async function getBacklogsByUserId(userId) {
+  try {
+    const snap = await db
+      .collection(TASKS)
+      .where("userId", "==", String(userId))
+      .get();
+
+    const results = await Promise.all(
+      snap.docs.map(async (doc) => {
+        const task = { taskId: doc.id, ...doc.data() };
+
+        // JOIN agent
+        if (task.agentId) {
+          const agentSnap = await db.collection(AGENTS).doc(task.agentId).get();
+          if (agentSnap.exists) {
+            task.agentName = agentSnap.data().agentName;
+            task.agentSpecial = agentSnap.data().agentSpecial;
+          }
+        }
+
+        return task;
+      })
+    );
+
+    return results;
+  } catch (err) {
+    console.error("Firestore getBacklogsByUserId error:", err);
+    throw err;
+  }
+}
 
 module.exports = {
-    createBacklogItem,
-    updateBacklogItemStatus,// Export the new function
-    getBacklogsByUserId
-
+  createBacklogItem,
+  updateBacklogItemStatus,
+  getBacklogsByUserId
 };
-
-    

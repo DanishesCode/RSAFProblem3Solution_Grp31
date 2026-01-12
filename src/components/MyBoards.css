@@ -1,0 +1,190 @@
+/* src/pages/MyBoards.css */
+
+.myb-page {
+  height: 100vh;                 /* ✅ must be fixed height for internal scroll */
+  background: #ffffff;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: #111;
+  padding: 22px 28px 28px;
+  position: relative;
+
+  display: flex;                 /* ✅ */
+  flex-direction: column;        /* ✅ */
+}
+
+/* Top bar */
+.myb-topbar {
+  display: grid;
+  grid-template-columns: 140px 1fr 140px; /* keep title centered */
+  align-items: center;
+  gap: 10px;
+
+  background: #eee7df;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.myb-back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.myb-back:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.myb-back-icon {
+  font-size: 26px;
+  line-height: 1;
+  margin-top: -2px;
+}
+
+.myb-title {
+  justify-self: center;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.myb-rule {
+  margin: 14px 0 10px;
+  height: 1px;
+  background: #4a4a4a;
+  opacity: 0.5;
+}
+
+/* Search row */
+.myb-search-row {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0 8px;
+}
+
+.myb-search {
+  width: min(980px, 100%);
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #6e6e6e;
+  background: #fff;
+  outline: none;
+  font-size: 14px;
+}
+
+.myb-search:focus {
+  box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.18);
+  border-color: #2f6fed;
+}
+
+/* ✅ This element becomes the scroll container */
+.myb-list {
+  flex: 1;                       /* ✅ take remaining height */
+  min-height: 0;                 /* ✅ CRITICAL for scroll inside flex */
+  padding: 16px 0 110px;         /* space so last row not under Create button */
+  display: flex;
+  justify-content: center;
+}
+
+/* only scroll when you add this class */
+.myb-list.is-scroll {
+  overflow-y: auto;              /* ✅ scrolls */
+  overflow-x: hidden;
+}
+
+/* Grid */
+.myb-grid {
+  width: min(1100px, 100%);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 42px;
+}
+
+/* Card */
+.myb-card {
+  border: 1.5px solid #6e6e6e;
+  border-radius: 10px;
+  background: #eee7df;
+  padding: 18px 20px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  min-height: 110px;
+}
+
+.myb-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.12);
+}
+
+.myb-card-title {
+  font-weight: 900;
+  margin-bottom: 6px;
+  font-size: 20px;
+}
+
+.myb-card-sub {
+  font-size: 13px;
+  margin: 2px 0;
+}
+
+.myb-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 28px 0;
+  opacity: 0.7;
+}
+
+/* Create button (bottom-right) */
+.myb-create {
+  position: fixed;
+  right: 54px;
+  bottom: 44px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: #2f6fed;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.myb-create:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.18);
+}
+
+.myb-create:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Responsive */
+@media (max-width: 720px) {
+  .myb-topbar {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .myb-title {
+    justify-self: start;
+  }
+
+  .myb-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    width: min(560px, 100%);
+  }
+
+  .myb-create {
+    right: 18px;
+    bottom: 18px;
+  }
+}

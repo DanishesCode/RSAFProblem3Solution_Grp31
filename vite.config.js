@@ -4,12 +4,12 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3001,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true
-      }
+    middlewareMode: true,
+    // Disable HMR (no websocket) to avoid websocket disconnects and forced reloads
+    hmr: false,
+    watch: {
+      // Ignore common backup/temporary files (e.g. from editors or OneDrive)
+      ignored: ['**/*.old', '**/*.tmp', '**/*~', '**/*.swp']
     }
   },
   build: {
