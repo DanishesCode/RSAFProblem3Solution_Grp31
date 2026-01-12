@@ -1,0 +1,150 @@
+/* src/components/CreateBoardModal.css */
+
+.cbm-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.2);
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    z-index: 999;
+  }
+  
+  .cbm-modal {
+    width: min(820px, 96vw);
+    background: #fff;
+    border-radius: 10px;
+    padding: 26px 30px 22px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+  }
+  
+  .cbm-title {
+    margin: 0 0 14px;
+    font-size: 28px;
+    font-weight: 800;
+  }
+  
+  .cbm-label {
+    display: block;
+    margin: 14px 0 6px;
+    font-size: 13px;
+    color: #222;
+  }
+  
+  .cbm-select,
+  .cbm-input {
+    width: 100%;
+    height: 46px;
+    border-radius: 8px;
+    border: 1.5px solid #6e6e6e;
+    padding: 0 14px;
+    font-size: 14px;
+    outline: none;
+  }
+  
+  .cbm-select {
+    background: #f5f1ec;
+  }
+  
+  .cbm-input:focus,
+  .cbm-select:focus {
+    box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.18);
+    border-color: #2f6fed;
+  }
+  
+  .cbm-invite-row {
+    display: grid;
+    grid-template-columns: 1fr 140px;
+    gap: 18px;
+    align-items: center;
+  }
+  
+  .cbm-invite-btn {
+    height: 46px;
+    border-radius: 8px;
+    border: 1.5px solid #6e6e6e;
+    background: #cbbca9;
+    cursor: pointer;
+    font-weight: 700;
+  }
+  
+  .cbm-invite-btn:hover {
+    filter: brightness(0.98);
+  }
+  
+  .cbm-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  
+  .cbm-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.06);
+    font-size: 13px;
+  }
+  
+  .cbm-chip-x {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+  }
+  
+  .cbm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    margin-top: 22px;
+  }
+  
+  .cbm-cancel {
+    height: 44px;
+    padding: 0 22px;
+    border-radius: 8px;
+    border: 1.5px solid #6e6e6e;
+    background: #fff;
+    cursor: pointer;
+    font-weight: 700;
+  }
+  
+  .cbm-cancel:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+  
+  .cbm-create {
+    height: 44px;
+    padding: 0 22px;
+    border-radius: 8px;
+    border: none;
+    background: #2f6fed;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 800;
+  }
+  
+  .cbm-create:hover {
+    filter: brightness(0.98);
+  }
+  
+  .cbm-create:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  
+  @media (max-width: 640px) {
+    .cbm-modal {
+      padding: 20px;
+    }
+    .cbm-invite-row {
+      grid-template-columns: 1fr;
+    }
+  }
+  
