@@ -11,6 +11,7 @@ const githubController = require("./controllers/githubController");
 const taskController = require("./controllers/taskController");
 const GeminiController = require('./controllers/geminiController');
 const OpenAIController = require('./controllers/openaiController');
+const boardController = require("./controllers/boardController");
 
 // Load env
 dotenv.config();
@@ -61,6 +62,13 @@ app.get("/login", (req, res) => {
 // ----------------------------------------------------
 // (C) API ROUTES (yours)
 // ----------------------------------------------------
+
+//CollabBoardCreate
+app.post("/boards", boardController.createBoard);
+app.get("/users/:userId/boards", boardController.listBoardsForUser);
+app.get("/boards/:boardId", boardController.getBoard);
+app.post("/boards/:boardId", boardController.updateBoard);
+app.delete("/boards/:boardId", boardController.deleteBoard);
 
 // GitHub OAuth
 app.get("/github", githubController.githubRedirect);
