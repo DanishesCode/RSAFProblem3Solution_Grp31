@@ -6,18 +6,35 @@ import CreateBoardModal from "./CreateBoardModal";
 export default function MyBoards() {
   const navigate = useNavigate();
 
-  const [boards, setBoards] = useState([
-    { id: 1, title: "Project One", repo: "Repo X", members: 3 },
-    { id: 2, title: "Project One", repo: "Repo X", members: 3 },
-    { id: 3, title: "Project One", repo: "Repo X", members: 3 },
-    { id: 4, title: "Project One", repo: "Repo X", members: 3 },
-    { id: 5, title: "Project Two", repo: "Repo Y", members: 5 },
-    { id: 6, title: "Project Three", repo: "Repo Z", members: 2 },
-  ]);
+  // Load boards from localStorage on initial mount
+  const [boards, setBoards] = useState(() => {
+    try {
+      const saved = localStorage.getItem("myBoards");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        console.log("[MyBoards] Loaded boards from localStorage:", parsed);
+        return Array.isArray(parsed) ? parsed : [];
+      }
+    } catch (err) {
+      console.warn("[MyBoards] Failed to load boards from localStorage:", err);
+    }
+    return [];
+  });
 
   const [repos, setRepos] = useState([]);
   const [query, setQuery] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Save boards to localStorage whenever boards state changes
+  useEffect(() => {
+    try {
+      localStorage.setItem("myBoards", JSON.stringify(boards));
+      console.log("[MyBoards] Saved boards to localStorage:", boards.length, "boards");
+    } catch (err) {
+      console.warn("[MyBoards] Failed to save boards to localStorage:", err);
+    }
+  }, [boards]);
 
   // ✅ Load repos from localStorage key: "repos" (comma-separated)
   useEffect(() => {
@@ -28,6 +45,59 @@ export default function MyBoards() {
       .filter(Boolean);
 
     setRepos(Array.from(new Set(list)));
+  }, []);
+
+  // ✅ Load personal boards from database
+  useEffect(() => {
+    const loadBoards = async () => {
+      try {
+        const userId = localStorage.getItem("userId") || localStorage.getItem("githubId");
+        
+        if (!userId) {
+          console.warn("[MyBoards] No userId found in localStorage");
+          setIsLoading(false);
+          return;
+        }
+
+        console.log("[MyBoards] Loading personal boards for userId:", userId);
+
+        const res = await fetch(`http://localhost:3000/users/${userId}/boards?type=personal`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({ error: "Failed to load boards" }));
+          console.error("[MyBoards] Failed to load boards:", error);
+          setIsLoading(false);
+          return;
+        }
+
+        const boardsData = await res.json();
+        console.log("[MyBoards] Loaded boards:", boardsData);
+
+        // Transform database format to component format
+        const transformedBoards = boardsData.map((board) => ({
+          id: board.id,
+          boardId: board.id, // Explicitly save boardId for easy access
+          title: board.name,
+          repo: board.repo,
+          type: board.type,
+          members: board.type === "collab" ? (board.memberIds?.length || 1) : 1,
+        }));
+
+        setBoards(transformedBoards);
+        // Boards will be automatically saved to localStorage via useEffect
+      } catch (err) {
+        console.error("[MyBoards] Error loading boards:", err);
+        alert(`Failed to load boards: ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadBoards();
   }, []);
 
   const filteredBoards = useMemo(() => {
@@ -81,6 +151,7 @@ export default function MyBoards() {
 
       const created = {
         id: json.id,
+        boardId: json.id, // Explicitly save boardId
         title: json.name,
         repo: json.repo,
         type: json.type,
@@ -89,7 +160,14 @@ export default function MyBoards() {
 
       console.log("[MyBoards] Board created OK:", created);
 
-      setBoards((prev) => [created, ...prev]);
+      // Only add to list if it's a personal board (since we're filtering for personal only)
+      if (json.type === "personal") {
+        setBoards((prev) => {
+          const updated = [created, ...prev];
+          // Updated boards will be automatically saved to localStorage via useEffect
+          return updated;
+        });
+      }
       setIsCreateOpen(false);
     } catch (err) {
       console.error("[MyBoards] Network/JS error creating board:", err);
@@ -128,23 +206,40 @@ export default function MyBoards() {
       {/* Boards container */}
       <main className={`myb-list ${shouldScroll ? "is-scroll" : ""}`}>
         <div className="myb-grid">
-          {filteredBoards.map((b) => (
-            <button
-              key={b.id}
-              className="myb-card"
-              type="button"
-              onClick={() => navigate(`/board/${b.id}`)}
-            >
-              <div className="myb-card-title">{b.title}</div>
-              <div className="myb-card-sub">{b.repo}</div>
-              <div className="myb-card-sub">
-                {b.type === "personal" ? "Personal" : `${b.members} members`}
-              </div>
-            </button>
-          ))}
+          {isLoading ? (
+            <div className="myb-empty">Loading boards...</div>
+          ) : (
+            <>
+              {filteredBoards.map((b) => (
+                <button
+                  key={b.id}
+                  className="myb-card"
+                  type="button"
+                  data-board-id={b.boardId || b.id}
+                  onClick={() => {
+                    const boardId = b.boardId || b.id;
+                    // Save boardId to localStorage when clicked
+                    try {
+                      localStorage.setItem("selectedBoardId", boardId);
+                      console.log("[MyBoards] Saved boardId to localStorage:", boardId);
+                    } catch (err) {
+                      console.warn("[MyBoards] Failed to save boardId to localStorage:", err);
+                    }
+                    navigate(`/board/${b.id}`);
+                  }}
+                >
+                  <div className="myb-card-title">{b.title}</div>
+                  <div className="myb-card-sub">{b.repo}</div>
+                  <div className="myb-card-sub">
+                    {b.type === "personal" ? "Personal" : `${b.members} members`}
+                  </div>
+                </button>
+              ))}
 
-          {filteredBoards.length === 0 && (
-            <div className="myb-empty">No boards found.</div>
+              {filteredBoards.length === 0 && !isLoading && (
+                <div className="myb-empty">No personal boards found.</div>
+              )}
+            </>
           )}
         </div>
       </main>

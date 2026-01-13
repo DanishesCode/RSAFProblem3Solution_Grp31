@@ -26,10 +26,29 @@ exports.createBoard = async (req, res) => {
 exports.listBoardsForUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const boards = await BoardModel.listBoardsForUser(String(userId));
+    const { type } = req.query; // Optional query parameter to filter by type
+    
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+    
+    console.log(`[boardController] Listing boards for userId: ${userId}, type: ${type || 'all'}`);
+    
+    let boards;
+    if (type === "personal") {
+      boards = await BoardModel.listPersonalBoardsForUser(String(userId));
+    } else {
+      boards = await BoardModel.listBoardsForUser(String(userId));
+    }
+    
+    console.log(`[boardController] Found ${boards.length} boards`);
     res.json(boards);
   } catch (err) {
-    res.status(400).json({ error: err.message || "Failed to list boards" });
+    console.error("[boardController] Error listing boards:", err);
+    res.status(400).json({ 
+      error: err.message || "Failed to list boards",
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 };
 
