@@ -135,15 +135,19 @@ function normalizeAcceptCrit(body) {
 /**
  * GET /backlog/getUserLogs?userId=...
  */
-export async function initializeLogs(userId) {
+export async function initializeLogs(userId, boardId = null) {
   try {
-    const res = await fetch(
-      `${API_BASE_URL}/backlog/getUserLogs?userId=${encodeURIComponent(userId)}`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    let url;
+    if (boardId) {
+      url = `${API_BASE_URL}/backlog/getBoardLogs?boardId=${encodeURIComponent(boardId)}`;
+    } else {
+      url = `${API_BASE_URL}/backlog/getUserLogs?userId=${encodeURIComponent(userId)}`;
+    }
+
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
@@ -152,28 +156,32 @@ export async function initializeLogs(userId) {
 
     const logs = await res.json();
 
-    return (logs || []).map((log) => ({
-      taskid: log.taskId || log.taskid,
+    return (logs || []).map((log) => {
+      // Convert requirement string back to array
+      let requirements = [];
+      if (log.requirement) {
+        requirements = log.requirement.split(", ").filter(r => r.trim() !== "");
+      } else if (Array.isArray(log.requirements)) {
+        requirements = log.requirements;
+      }
 
-      title: log.title || "",
-      description: log.description || "",
-      priority: log.priority || "medium",
-      status: normalizeStatus(log.status || "toDo"),
-      repo: log.repo || "",
-
-      // agentId should now be Firestore doc id
-      agentId: log.agentId || "",
-
-      // backend join will populate these if agentId matches doc id
-      agentName: log.agentName || "",
-      assignedAgent: log.agentName || log.assignedAgent || "",
-
-      requirements: parseArray(log.requirements),
-      acceptCrit: parseArray(log.acceptCrit),
-
-      progress: 0,
-      agentProcess: log.agentProcess || [],
-    }));
+      return {
+        taskid: log.taskId || log.taskid,
+        title: log.title || "",
+        prompt: log.prompt || "",
+        description: log.description || "",
+        priority: log.priority || "medium",
+        status: normalizeStatus(log.status || "toDo"),
+        repo: log.repo || "",
+        ownerId: log.ownerId || "",
+        boardId: log.boardId || "",
+        agentName: log.agentName || "",
+        agentOutput: log.agentOutput || "",
+        assignedAgent: log.agentName || log.assignedAgent || "",
+        requirements: requirements,
+        progress: 0,
+      };
+    });
   } catch (error) {
     console.error("initializeLogs error:", error);
     return [];
@@ -196,23 +204,24 @@ export async function saveBacklog(formData) {
   const normalizedAgentId = normalizeAgentId(formData.agentId, formData.assignedAgent);
 
   const payload = {
-    // required-ish
-    userId: String(formData.userId ?? formData.ownerId ?? ""), // allow ownerId fallback
-    agentId: normalizedAgentId,
-
-    // core fields
+    // Core fields
     title: formData.title || "",
-    description: formData.description || "",
+    prompt: formData.prompt || "",
+    description: formData.description || "", // Optional field
     priority: formData.priority || "medium",
     status: normalizeStatus(formData.status || "toDo"),
     repo: formData.repo || "",
-
-    // arrays
+    
+    // User and board fields
+    ownerId: String(formData.ownerId ?? formData.userId ?? ""),
+    boardId: formData.boardId || "",
+    
+    // Agent fields
+    agentName: formData.assignedAgent || "",
+    agentOutput: formData.agentOutput || "",
+    
+    // Requirements (will be converted to string in model)
     requirements: parseArray(formData.requirements),
-    acceptCrit: parseArray(acceptCritRaw),
-
-    // optional
-    agentProcess: parseArray(formData.agentProcess),
   };
 
   try {
@@ -229,24 +238,33 @@ export async function saveBacklog(formData) {
 
     const created = await res.json();
 
+    // Convert requirement string back to array for frontend
+    let requirements = [];
+    if (created.requirement) {
+      requirements = created.requirement.split(", ").filter(r => r.trim() !== "");
+    } else if (Array.isArray(created.requirements)) {
+      requirements = created.requirements;
+    }
+
     return {
       taskid: created.taskId || created.taskid,
 
       title: created.title || "",
+      prompt: created.prompt || "",
       description: created.description || "",
       priority: created.priority || "medium",
       status: normalizeStatus(created.status || "toDo"),
       repo: created.repo || "",
 
-      agentId: created.agentId || "",
+      ownerId: created.ownerId || formData.ownerId || formData.userId || "",
+      boardId: created.boardId || formData.boardId || "",
+      
       agentName: created.agentName || "",
+      agentOutput: created.agentOutput || "",
       assignedAgent: created.agentName || "",
 
-      requirements: parseArray(created.requirements),
-      acceptCrit: parseArray(created.acceptCrit),
-
+      requirements: requirements,
       progress: 0,
-      agentProcess: created.agentProcess || [],
     };
   } catch (error) {
     console.error("saveBacklog error:", error);

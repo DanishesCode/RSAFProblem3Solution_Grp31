@@ -45,6 +45,26 @@ async function getBacklogsByUser(req, res) {
 }
 
 /**
+ * GET /backlog/getBoardLogs?boardId=...
+ */
+async function getBacklogsByBoard(req, res) {
+  try {
+    const { boardId } = req.query;
+
+    if (!boardId) {
+      return res.status(400).json({ error: "Missing boardId in query" });
+    }
+
+    const backlogs = await taskModel.getBacklogsByBoardId(boardId);
+
+    return res.status(200).json(backlogs);
+  } catch (error) {
+    console.error("getBacklogsByBoard error:", error);
+    return res.status(500).json({ error: "Failed to fetch backlogs" });
+  }
+}
+
+/**
  * POST /backlog/save
  * Expected body (minimum):
  * {
@@ -56,31 +76,33 @@ async function createBacklog(req, res) {
   try {
     const body = req.body || {};
 
-    // IMPORTANT: In your Firestore, agent docs are keyed by doc ID (random string)
-    // So agentId should be that doc ID.
     const payload = {
-      userId: body.userId ?? body.ownerId,     // allow ownerId fallback
-      agentId: body.agentId,                  // must be agent doc id
-      title: body.title,
-      description: body.description,
-      priority: body.priority,
-      status: body.status,
-      repo: body.repo,
-
-      // Normalize arrays (handles stringified JSON)
+      // Core fields
+      title: body.title || "",
+      prompt: body.prompt || "",
+      description: body.description || "", // Optional field
+      priority: body.priority || "medium",
+      status: body.status || "toDo",
+      repo: body.repo || "",
+      
+      // User and board fields
+      ownerId: body.ownerId || body.userId || "",
+      boardId: body.boardId || "",
+      
+      // Agent fields
+      agentName: body.agentName || body.assignedAgent || "",
+      agentOutput: body.agentOutput || "",
+      
+      // Requirements - keep as array for processing, model will convert to string
       requirements: normalizeArray(body.requirements),
-      acceptCrit: normalizeArray(body.acceptCrit),
-
-      // keep if frontend sends it; model defaults to []
-      agentProcess: normalizeArray(body.agentProcess),
     };
 
     // Minimal validation
-    if (!payload.userId) {
-      return res.status(400).json({ error: "Missing userId (or ownerId) in body" });
+    if (!payload.ownerId) {
+      return res.status(400).json({ error: "Missing ownerId (or userId) in body" });
     }
-    if (!payload.agentId) {
-      return res.status(400).json({ error: "Missing agentId in body" });
+    if (!payload.title || payload.title.trim() === "") {
+      return res.status(400).json({ error: "Missing title in body" });
     }
 
     const created = await taskModel.createBacklogItem(payload);
@@ -127,6 +149,7 @@ async function updateStatus(req, res) {
 
 module.exports = {
   getBacklogsByUser,
+  getBacklogsByBoard,
   createBacklog,
   updateStatus,
 };

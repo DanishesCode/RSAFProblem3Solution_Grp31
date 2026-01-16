@@ -173,15 +173,16 @@ function Board() {
     loadBoardData();
   }, [isAuthenticated, boardId]);
 
-  // Load initial tasks - only when authenticated
+  // Load initial tasks - only when authenticated and boardId is available
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !boardId) return;
     
     const loadTasks = async () => {
       try {
         const userId = localStorage.getItem('userId');
         if (!userId) return;
-        const logs = await initializeLogs(userId);
+        // Load tasks by boardId instead of userId
+        const logs = await initializeLogs(userId, boardId);
         setTasks(logs);
         updateAgentWorkload(logs);
       } catch (error) {
@@ -191,7 +192,7 @@ function Board() {
     
     loadTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]); // Only run when authentication status changes
+  }, [isAuthenticated, boardId]); // Run when authentication status or boardId changes
 
   // Handle AI agent streaming - only when authenticated
   // Temporarily disable to prevent refresh loops - will re-enable after fixing
@@ -214,20 +215,23 @@ function Board() {
   // Handle task creation
   const handleCreateTask = async (taskData) => {
     try {
-      taskData.userId = localStorage.getItem('userId');
+      const userId = localStorage.getItem('userId') || localStorage.getItem('githubId');
+      taskData.userId = userId;
+      taskData.ownerId = userId; // Also set ownerId explicitly
       const saved = await saveBacklog(taskData);
       if (saved) {
         const newTask = {
           taskid: saved.taskid || `task-${Date.now()}`,
           title: saved.title,
-          description: saved.description || '',
+          prompt: saved.prompt || '',
           priority: saved.priority || 'medium',
           status: saved.status || 'toDo',
           repo: saved.repo || '',
+          ownerId: saved.ownerId || userId, // Include ownerId in the task object
+          boardId: saved.boardId || taskData.boardId || '',
           agentId: saved.agentId || saved.agentid,
           assignedAgent: saved.assignedAgent || mapAgentIdToName(saved.agentId || saved.agentid),
           requirements: saved.requirements || [],
-          acceptCrit: saved.acceptanceCriteria || [],
           progress: 0
         };
         setTasks(prev => [...prev, newTask]);

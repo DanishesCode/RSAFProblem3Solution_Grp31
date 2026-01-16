@@ -78,6 +78,7 @@ app.get("/users/github/:githubId", githubController.getUserByGithubId);
 
 // Backlogs
 app.get("/backlog/getUserLogs", taskController.getBacklogsByUser);
+app.get("/backlog/getBoardLogs", taskController.getBacklogsByBoard);
 app.post("/backlog/save", taskController.createBacklog);
 app.put("/backlog/status-update", taskController.updateStatus);
 
