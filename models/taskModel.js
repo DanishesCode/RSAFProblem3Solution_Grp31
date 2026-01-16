@@ -14,7 +14,6 @@ async function createBacklogItem(data) {
     }
 
     const doc = {
-      // Core fields
       title: data.title || "",
       prompt: data.prompt || "", // Required field
       description: data.description || "", // Optional field
@@ -94,6 +93,54 @@ async function updateTaskAgentOutput(taskId, agentOutput) {
   }
 }
 
+async function updateBacklogItem(taskId, data) {
+  try {
+    // Convert requirements array to string (comma-separated)
+    let requirementString = "";
+    if (Array.isArray(data.requirements) && data.requirements.length > 0) {
+      requirementString = data.requirements.join(", ");
+    } else if (typeof data.requirements === "string") {
+      requirementString = data.requirements;
+    }
+
+    const ref = db.collection(TASKS).doc(String(taskId));
+
+    // Check if document exists
+    const snap = await ref.get();
+    if (!snap.exists) {
+      return null;
+    }
+
+    // Update only the fields that are provided
+    const updateData = {
+      updatedAt: new Date()
+    };
+
+    if (data.title !== undefined) updateData.title = data.title || "";
+    if (data.prompt !== undefined) updateData.prompt = data.prompt || "";
+    if (data.description !== undefined) updateData.description = data.description || "";
+    if (data.priority !== undefined) updateData.priority = data.priority || "medium";
+    if (data.status !== undefined) updateData.status = data.status || "toDo";
+    if (data.repo !== undefined) updateData.repo = data.repo || "";
+    if (data.ownerId !== undefined) updateData.ownerId = String(data.ownerId || "");
+    if (data.boardId !== undefined) updateData.boardId = data.boardId || "";
+    if (data.agentName !== undefined) updateData.agentName = data.agentName || "";
+    if (data.agentOutput !== undefined) updateData.agentOutput = data.agentOutput || "";
+    if (requirementString !== undefined) updateData.requirement = requirementString;
+
+    await ref.update(updateData);
+
+    const updatedSnap = await ref.get();
+    return {
+      taskId: updatedSnap.id,
+      ...updatedSnap.data()
+    };
+  } catch (err) {
+    console.error("Firestore updateBacklogItem error:", err);
+    throw err;
+  }
+}
+
 async function getBacklogsByUserId(userId) {
   try {
     const snap = await db
@@ -107,6 +154,7 @@ async function getBacklogsByUserId(userId) {
         taskId: doc.id,
         title: data.title || "",
         prompt: data.prompt || "",
+        description: data.description || "",
         priority: data.priority || "medium",
         status: data.status || "toDo",
         repo: data.repo || "",
@@ -165,10 +213,29 @@ async function getBacklogsByBoardId(boardId) {
   }
 }
 
+async function deleteBacklogItem(taskId) {
+  try {
+    const ref = db.collection(TASKS).doc(String(taskId));
+    const snap = await ref.get();
+    
+    if (!snap.exists) {
+      return null;
+    }
+
+    await ref.delete();
+    return { taskId, deleted: true };
+  } catch (err) {
+    console.error("Firestore deleteBacklogItem error:", err);
+    throw err;
+  }
+}
+
 module.exports = {
   createBacklogItem,
   updateBacklogItemStatus,
   updateTaskAgentOutput,
+  updateBacklogItem,
+  deleteBacklogItem,
   getBacklogsByUserId,
   getBacklogsByBoardId
 };

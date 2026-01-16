@@ -34,44 +34,80 @@ const InProgressPanel = ({ task, onClose, onUpdateProcessLog }) => {
 
   const processText = parseProcessLog(task.agentProcess || '');
 
+  const getPriorityStyle = () => {
+    const priority = (task.priority || 'medium').toLowerCase();
+    if (priority === 'high') {
+      return { background: '#dc3545', color: 'white' };
+    } else if (priority === 'medium') {
+      return { background: '#ffc107', color: '#212529' };
+    } else {
+      return { background: '#28a745', color: 'white' };
+    }
+  };
+
   return (
-    <div id="inprg-panel" style={{ display: 'flex' }}>
-      <div className="inprg-header">
-        <h3>Task In Progress</h3>
-        <div>
-          <button className="btn-close" title="Close" onClick={onClose}>✕</button>
-        </div>
-      </div>
-      <div className="inprg-body">
-        <div className="inprg-row">
-          <strong className="title">{task.title || 'Untitled'}</strong>
-          <span className="badge priority">{task.priority || 'medium'}</span>
-        </div>
-        <div className="inprg-row meta">
-          <strong>Assigned AI Agent:</strong> <span className="agent">{task.assignedAgent || 'Unknown'}</span>
-        </div>
-        <div className="inprg-row">
-          <strong>Description</strong>
-          <div className="desc" style={{ marginTop: '8px' }}>
-            {task.description || 'No description'}
+    <div id="inprg-panel" style={{ display: 'flex' }} onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: '600px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="inprg-header">
+          <button className="btn-close" title="Close" onClick={onClose}>&times;</button>
+          <h3>{task.title || 'Task In Progress'}</h3>
+          <div className="priority-badge" style={getPriorityStyle()}>
+            {(task.priority || 'medium').charAt(0).toUpperCase() + (task.priority || 'medium').slice(1)}
           </div>
         </div>
-        <div className="inprg-row">
-          <strong>AI Thinking Process</strong>
-          <div 
-            className="thinking" 
-            aria-live="polite"
-            ref={thinkingRef}
-          >
-            {processText || 'No process log yet...'}
+        <div className="inprg-body">
+          <div className="review-section">
+            <label>Prompt used:</label>
+            <div className="prompt-box">
+              {task.prompt || task.description || 'No prompt provided'}
+            </div>
+          </div>
+
+          <div className="review-section">
+            <label>Assigned AI Agent</label>
+            <div className="agent-info">
+              <div className="agent-icon">🤖</div>
+              <div className="agent-details">
+                <div className="agent-name">{task.assignedAgent || 'Unknown'}</div>
+                <div className="agent-status-modal">
+                  Processing task...
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {task.description && task.description !== task.prompt && (
+            <div className="review-section">
+              <label>Description</label>
+              <div className="description-box">
+                {task.description}
+              </div>
+            </div>
+          )}
+
+          <div className="review-section">
+            <label>AI Thinking Process</label>
+            <div 
+              className="code-info" 
+              aria-live="polite"
+              ref={thinkingRef}
+              style={{ 
+                fontFamily: 'monospace',
+                whiteSpace: 'pre-wrap',
+                maxHeight: '300px',
+                overflow: 'auto'
+              }}
+            >
+              {processText || 'No process log yet...'}
+            </div>
           </div>
         </div>
-      </div>
-      <div className="inprg-footer">
-        <button className="btn-pause" onClick={handlePause}>
-          {isPaused ? 'Resume' : 'Pause'}
-        </button>
-        <button className="btn-stop" onClick={handleStop}>Stop</button>
+        <div className="inprg-footer">
+          <button className="btn-pause" onClick={handlePause}>
+            {isPaused ? 'Resume' : 'Pause'}
+          </button>
+          <button className="btn-stop" onClick={handleStop}>Stop</button>
+        </div>
       </div>
     </div>
   );

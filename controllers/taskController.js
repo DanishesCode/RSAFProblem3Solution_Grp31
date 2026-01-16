@@ -147,9 +147,118 @@ async function updateStatus(req, res) {
   }
 }
 
+/**
+ * PUT /backlog/update-agent-output
+ * Expected body:
+ * { taskId, agentOutput }
+ */
+async function updateAgentOutput(req, res) {
+  try {
+    const { taskId, taskid, agentOutput } = req.body || {};
+
+    const id = taskId || taskid;
+
+    if (!id) {
+      return res.status(400).json({ error: "Missing taskId in body" });
+    }
+
+    const updated = await taskModel.updateTaskAgentOutput(id, agentOutput);
+
+    if (!updated) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    return res.status(200).json(updated);
+  } catch (error) {
+    console.error("updateAgentOutput error:", error);
+    return res.status(500).json({ error: "Failed to update agent output" });
+  }
+}
+
+/**
+ * PUT /backlog/update
+ * Expected body:
+ * { taskId, title, prompt, description, priority, status, repo, ownerId, boardId, agentName, agentOutput, requirements }
+ */
+async function updateBacklog(req, res) {
+  try {
+    const body = req.body || {};
+    const { taskId, taskid } = body;
+
+    const id = taskId || taskid;
+
+    if (!id) {
+      return res.status(400).json({ error: "Missing taskId in body" });
+    }
+
+    const payload = {
+      // Core fields
+      title: body.title,
+      prompt: body.prompt,
+      description: body.description,
+      priority: body.priority,
+      status: body.status,
+      repo: body.repo,
+      
+      // User and board fields
+      ownerId: body.ownerId || body.userId,
+      boardId: body.boardId,
+      
+      // Agent fields
+      agentName: body.agentName || body.assignedAgent,
+      agentOutput: body.agentOutput,
+      
+      // Requirements
+      requirements: normalizeArray(body.requirements),
+    };
+
+    const updated = await taskModel.updateBacklogItem(id, payload);
+
+    if (!updated) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    return res.status(200).json(updated);
+  } catch (error) {
+    console.error("updateBacklog error:", error);
+    return res.status(500).json({ error: "Failed to update backlog item" });
+  }
+}
+
+/**
+ * DELETE /backlog/delete
+ * Expected body:
+ * { taskId }
+ */
+async function deleteBacklog(req, res) {
+  try {
+    const { taskId, taskid } = req.body || {};
+
+    const id = taskId || taskid;
+
+    if (!id) {
+      return res.status(400).json({ error: "Missing taskId in body" });
+    }
+
+    const deleted = await taskModel.deleteBacklogItem(id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    return res.status(200).json(deleted);
+  } catch (error) {
+    console.error("deleteBacklog error:", error);
+    return res.status(500).json({ error: "Failed to delete backlog item" });
+  }
+}
+
 module.exports = {
   getBacklogsByUser,
   getBacklogsByBoard,
   createBacklog,
   updateStatus,
+  updateAgentOutput,
+  updateBacklog,
+  deleteBacklog,
 };

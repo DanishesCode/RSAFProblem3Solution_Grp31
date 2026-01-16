@@ -14,22 +14,28 @@ const ReviewModal = ({ task, onClose, onDecision }) => {
     }
   };
 
-  const parseArray = (value) => {
-    if (!value) return '';
-    if (Array.isArray(value)) return value.join(', ');
+  const parseRequirements = (value) => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value.filter(r => r && r.trim() !== '');
     if (typeof value === 'string') {
       try {
         const parsed = JSON.parse(value);
-        if (Array.isArray(parsed)) return parsed.join(', ');
-        return parsed;
+        if (Array.isArray(parsed)) return parsed.filter(r => r && r.trim() !== '');
+        return [parsed].filter(r => r && r.trim() !== '');
       } catch {
-        return value;
+        // If it's a comma-separated string, split it
+        if (value.includes(',')) {
+          return value.split(',').map(v => v.trim()).filter(Boolean);
+        }
+        // If it's a single requirement string
+        const trimmed = value.trim();
+        return trimmed ? [trimmed] : [];
       }
     }
-    return String(value);
+    return [];
   };
 
-  const acceptance = parseArray(task.acceptCrit);
+  const requirements = parseRequirements(task.requirements);
   const progress = task.progress || 0;
   const agentName = task.assignedAgent || 'Unknown';
 
@@ -48,25 +54,31 @@ const ReviewModal = ({ task, onClose, onDecision }) => {
           <div className="review-section">
             <label>Prompt used:</label>
             <div className="prompt-box" id="review-prompt">
-              {task.description || 'No prompt provided'}
+              {task.prompt || task.description || 'No prompt provided'}
             </div>
           </div>
 
           <div className="review-section">
-            <label>Acceptance</label>
-            <div className="acceptance-box" id="review-acceptance">
-              {acceptance || 'No acceptance criteria provided'}
-            </div>
+            <label>Requirements</label>
+            {requirements.length > 0 ? (
+              <div className="requirement-tags">
+                {requirements.map((req, index) => (
+                  <span key={index} className="requirement-tag">
+                    {req}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="acceptance-box" id="review-acceptance">
+                No requirements provided
+              </div>
+            )}
           </div>
 
           <div className="review-section">
-            <label>Appended Code</label>
-            <button className="repo-link" id="review-repo-link">
-              📁 <span id="review-repo-name">In {(task.repo || 'Repository').split('/').pop()}</span>
-              <span className="expand-icon">⤢</span>
-            </button>
+            <label>AI Output</label>
             <div className="code-info" id="review-code-changes">
-              {task.agentProcess || 'Shows github and changed code in the github'}
+              {task.agentOutput || task.agentProcess || 'No output generated yet'}
             </div>
           </div>
 
@@ -96,8 +108,14 @@ const ReviewModal = ({ task, onClose, onDecision }) => {
         </div>
 
         <div className="review-modal-footer">
-          <button className="btn-try-again" id="review-retry" onClick={() => onDecision('retry')}>
-            Try Again
+          <button className="btn-reprompt" onClick={() => onDecision('reprompt')}>
+            Reprompt
+          </button>
+          <button className="btn-cancel" onClick={() => onDecision('cancel')}>
+            Cancel
+          </button>
+          <button className="btn-accept" onClick={() => onDecision('accept')}>
+            Accept
           </button>
         </div>
       </div>

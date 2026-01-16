@@ -35,7 +35,9 @@ const KanbanColumn = ({ columnKey, title, tasks, onTaskClick, onTaskMove }) => {
       className={`column ${isDragOver ? 'drag-over' : ''}`}
       type={columnKey}
     >
-      <div className="column-header">{title}</div>
+      <div className="column-header">
+        {title} <span className="task-count">({tasks.length})</span>
+      </div>
       <div 
         className="task-list"
         onDragOver={handleDragOver}

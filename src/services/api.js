@@ -322,6 +322,109 @@ export async function updateTaskStatus(taskId, status) {
 }
 
 /**
+ * PUT /backlog/update
+ * body: { taskId, title, prompt, description, priority, status, repo, ownerId, boardId, agentName, agentOutput, requirements }
+ */
+export async function updateBacklog(formData) {
+  const payload = {
+    taskId: String(formData.taskid || formData.taskId || ""),
+    // Core fields
+    title: formData.title || "",
+    prompt: formData.prompt || "",
+    description: formData.description || "",
+    priority: formData.priority || "medium",
+    status: normalizeStatus(formData.status || "toDo"),
+    repo: formData.repo || "",
+    
+    // User and board fields
+    ownerId: String(formData.ownerId ?? formData.userId ?? ""),
+    boardId: formData.boardId || "",
+    
+    // Agent fields
+    agentName: formData.assignedAgent || formData.agentName || "",
+    agentOutput: formData.agentOutput || "",
+    
+    // Requirements (will be converted to string in model)
+    requirements: parseArray(formData.requirements),
+  };
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/backlog/update`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Failed to update backlog: ${res.status} ${text}`);
+    }
+
+    const updated = await res.json();
+
+    // Convert requirement string back to array for frontend
+    let requirements = [];
+    if (updated.requirement) {
+      requirements = updated.requirement.split(", ").filter(r => r.trim() !== "");
+    } else if (Array.isArray(updated.requirements)) {
+      requirements = updated.requirements;
+    }
+
+    return {
+      taskid: updated.taskId || updated.taskid,
+
+      title: updated.title || "",
+      prompt: updated.prompt || "",
+      description: updated.description || "",
+      priority: updated.priority || "medium",
+      status: normalizeStatus(updated.status || "toDo"),
+      repo: updated.repo || "",
+
+      ownerId: updated.ownerId || formData.ownerId || formData.userId || "",
+      boardId: updated.boardId || formData.boardId || "",
+      
+      agentName: updated.agentName || "",
+      agentOutput: updated.agentOutput || "",
+      assignedAgent: updated.agentName || "",
+
+      requirements: requirements,
+      progress: 0,
+    };
+  } catch (error) {
+    console.error("updateBacklog error:", error);
+    throw error;
+  }
+}
+
+/**
+ * DELETE /backlog/delete
+ * body: { taskId }
+ */
+export async function deleteBacklog(taskId) {
+  const payload = {
+    taskId: String(taskId),
+  };
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/backlog/delete`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Failed to delete backlog: ${res.status} ${text}`);
+    }
+
+    return await res.json();
+  } catch (error) {
+    console.error("deleteBacklog error:", error);
+    throw error;
+  }
+}
+
+/**
  * Optional helper if your UI needs agent list without calling backend.
  * (This uses your Firestore IDs directly.)
  */

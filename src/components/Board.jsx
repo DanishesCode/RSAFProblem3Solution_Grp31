@@ -11,7 +11,7 @@ import ActivitySidebar from './ActivitySidebar';
 import InProgressPanel from './InProgressPanel';
 import NotificationContainer from './NotificationContainer';
 import ManageMembersModal from './ManageMembersModal';
-import { initializeLogs, saveBacklog, updateTaskStatus } from '../services/api';
+import { initializeLogs, saveBacklog, updateBacklog, updateTaskStatus, deleteBacklog } from '../services/api';
 import { isValidTransition } from '../utils/taskTransitions';
 import { useAgentStreaming } from '../hooks/useAgentStreaming';
 import '../styles.css';
@@ -23,9 +23,9 @@ function Board() {
   const boardId = boardIdFromParams || localStorage.getItem('selectedBoardId');
   const [tasks, setTasks] = useState([]);
   const [agents, setAgents] = useState([
-    { id: 1, name: 'Claude', status: 'working', workload: 0 },
-    { id: 2, name: 'Gemini', status: 'offline', workload: 0 },
-    { id: 3, name: 'OpenAI', status: 'working', workload: 0 }
+    { id: 1, name: 'Claude', status: 'working', workload: 0, logo: '/img/claude.png' },
+    { id: 2, name: 'Gemini', status: 'offline', workload: 0, logo: '/img/gemini.png' },
+    { id: 3, name: 'OpenAI', status: 'working', workload: 0, logo: '/img/openai.png' }
   ]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -43,6 +43,7 @@ function Board() {
   const [boardData, setBoardData] = useState(null);
   const [boardMembers, setBoardMembers] = useState([]);
   const [userRole, setUserRole] = useState(null); // 'owner' or 'editor'
+  const [isReprompting, setIsReprompting] = useState(false); // Track if we're reprompting
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     // Initialize auth state from localStorage immediately
     return !!localStorage.getItem('githubId');
@@ -74,10 +75,48 @@ function Board() {
 
   // Handle task update
   const handleUpdateTask = useCallback(async (taskId, updates) => {
-    setTasks(prev => prev.map(task => 
-      task.taskid === taskId ? { ...task, ...updates } : task
-    ));
-  }, []);
+    try {
+      // Update existing task in backend using updateBacklog
+      const userId = localStorage.getItem('userId') || localStorage.getItem('githubId');
+      const taskToUpdate = tasks.find(t => t.taskid === taskId);
+      
+      if (taskToUpdate) {
+        const updatedTaskData = {
+          ...taskToUpdate,
+          ...updates,
+          userId: userId,
+          ownerId: userId,
+          taskid: taskId,
+          // Ensure we have all required fields
+          title: updates.title || taskToUpdate.title,
+          prompt: updates.prompt || taskToUpdate.prompt || '',
+          assignedAgent: updates.assignedAgent || taskToUpdate.assignedAgent,
+          agentId: updates.agentId || taskToUpdate.agentId,
+          requirements: updates.requirements || taskToUpdate.requirements || [],
+          status: updates.status || taskToUpdate.status || 'toDo',
+        };
+        
+        // Update in backend (not create)
+        const saved = await updateBacklog(updatedTaskData);
+        
+        // Update local state
+        setTasks(prev => prev.map(task => 
+          task.taskid === taskId ? { ...task, ...updates, ...saved } : task
+        ));
+      } else {
+        // Fallback: just update local state if task not found
+        setTasks(prev => prev.map(task => 
+          task.taskid === taskId ? { ...task, ...updates } : task
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating task:', error);
+      // Still update local state even if backend fails
+      setTasks(prev => prev.map(task => 
+        task.taskid === taskId ? { ...task, ...updates } : task
+      ));
+    }
+  }, [tasks]);
 
   // Update agent workload
   const updateAgentWorkload = useCallback((taskList) => {
@@ -88,11 +127,25 @@ function Board() {
         .filter(task => task.status === 'progress')
         .forEach(task => {
           const agentId = task.agentId || task.agentid;
+          const agentName = task.assignedAgent;
+          
+          // Match by agentId (1, 2, 3) or by agent name
           if (agentId && agentWork.hasOwnProperty(agentId)) {
-            agentWork[agentId] += 20;
+            agentWork[agentId] += 20; // 20% per task, max 5 tasks = 100%
+          } else if (agentName) {
+            // Also match by name for cases where agentId might not be set
+            const agentNameLower = agentName.toLowerCase();
+            if (agentNameLower === 'claude') agentWork[1] += 20;
+            else if (agentNameLower === 'gemini') agentWork[2] += 20;
+            else if (agentNameLower === 'openai') agentWork[3] += 20;
           }
         });
     }
+
+    // Cap workload at 100%
+    Object.keys(agentWork).forEach(key => {
+      if (agentWork[key] > 100) agentWork[key] = 100;
+    });
 
     setAgents(prev => prev.map(agent => ({
       ...agent,
@@ -252,6 +305,45 @@ function Board() {
     }
   };
 
+  // Call Gemini API to generate output for a task (via backend)
+  const callGeminiAPI = async (task) => {
+    try {
+      notify(`Processing task with ${task.assignedAgent || 'AI'}...`, 2000, 'success');
+
+      // Call backend endpoint that handles everything
+      const response = await fetch('http://localhost:3000/ai/gemini/process-task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          taskId: task.taskid
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `Gemini API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const agentOutput = data.agentOutput || '';
+
+      // Update local state
+      setTasks(prev => prev.map(t => 
+        t.taskid === task.taskid 
+          ? { ...t, agentOutput: agentOutput }
+          : t
+      ));
+
+      notify('AI processing complete!', 2000, 'success');
+      return agentOutput;
+    } catch (error) {
+      console.error('Error calling Gemini API:', error);
+      notify(`Failed to process task with AI: ${error.message}`, 3000, 'error');
+      throw error;
+    }
+  };
+
   // Handle task move (drag and drop)
   const handleTaskMove = async (taskId, fromStatus, toStatus) => {
     if (!isValidTransition(fromStatus, toStatus)) {
@@ -259,17 +351,28 @@ function Board() {
       return false;
     }
 
-    // Check agent workload limit
+    // Check agent workload limit (max 5 tasks in progress)
     if (toStatus === 'progress') {
       const task = tasks.find(t => t.taskid === taskId);
       if (task) {
         const agentId = task.agentId || task.agentid;
-        const inProgressCount = tasks.filter(t => 
-          t.status === 'progress' && (t.agentId === agentId || t.agentid === agentId)
-        ).length;
+        const agentName = task.assignedAgent;
         
+        // Count tasks currently in progress for this agent (excluding the current task if it's already in progress)
+        const isCurrentTaskInProgress = task.status === 'progress';
+        const inProgressCount = tasks.filter(t => {
+          if (t.taskid === taskId && isCurrentTaskInProgress) return false; // Don't count current task if it's already in progress
+          const tAgentId = t.agentId || t.agentid;
+          const tAgentName = t.assignedAgent;
+          return t.status === 'progress' && (
+            (tAgentId && tAgentId === agentId) ||
+            (tAgentName && agentName && String(tAgentName).toLowerCase() === String(agentName).toLowerCase())
+          );
+        }).length;
+        
+        // If agent already has 5 tasks in progress, prevent adding a 6th
         if (inProgressCount >= 5) {
-          notify(`Agent ${task.assignedAgent} already has 5 tasks in progress`, 3000, 'error');
+          notify(`Agent ${task.assignedAgent} already has 5 tasks in progress (maximum)`, 3000, 'error');
           return false;
         }
       }
@@ -278,9 +381,11 @@ function Board() {
     try {
       await updateTaskStatus(taskId, toStatus);
       
-      const updatedTasks = tasks.map(task => {
-        if (task.taskid === taskId) {
-          const updated = { ...task, status: toStatus };
+      const task = tasks.find(t => t.taskid === taskId);
+      
+      const updatedTasks = tasks.map(t => {
+        if (t.taskid === taskId) {
+          const updated = { ...t, status: toStatus };
           
           // Handle progress updates
           if (toStatus === 'progress') {
@@ -305,17 +410,44 @@ function Board() {
           
           return updated;
         }
-        return task;
+        return t;
       });
       
       setTasks(updatedTasks);
       updateAgentWorkload(updatedTasks);
       
-      // Auto-move from progress to review after 10 seconds
-      if (toStatus === 'progress') {
-        setTimeout(() => {
-          handleTaskMove(taskId, 'progress', 'review');
-        }, 10000);
+      // When task moves to "progress", call Gemini API and auto-move to review
+      if (toStatus === 'progress' && task) {
+        try {
+          // Call Gemini API (works for all agents - Gemini, Claude, OpenAI)
+          await callGeminiAPI(task);
+          
+          // Automatically move to review after AI processing
+          setTimeout(async () => {
+            await updateTaskStatus(taskId, 'review');
+            const reviewTasks = updatedTasks.map(t => {
+              if (t.taskid === taskId) {
+                const updated = { ...t, status: 'review', progress: 100 };
+                pushActivity({
+                  title: updated.title,
+                  agent: updated.assignedAgent,
+                  status: 'In Review',
+                  priority: updated.priority,
+                  repo: updated.repo,
+                  percent: 100
+                });
+                return updated;
+              }
+              return t;
+            });
+            setTasks(reviewTasks);
+            updateAgentWorkload(reviewTasks);
+            notify('Task moved to review', 2000, 'success');
+          }, 1000); // Small delay to ensure output is saved
+        } catch (error) {
+          console.error('Error processing task with AI:', error);
+          // Task stays in progress even if AI fails
+        }
       }
       
       return true;
@@ -349,18 +481,32 @@ function Board() {
   const handleReviewDecision = async (decision) => {
     if (!selectedTask) return;
     
-    let newStatus;
-    if (decision === 'retry') {
-      newStatus = 'progress';
-    } else if (decision === 'accept') {
-      newStatus = 'done';
+    if (decision === 'reprompt') {
+      // Close review modal first
+      const taskToEdit = { ...selectedTask };
+      setSelectedTask(null);
+      setModalType(null);
+      
+      // Small delay to ensure review modal closes, then open edit modal
+      setTimeout(() => {
+        setEditingTask(taskToEdit);
+        setIsCreateModalOpen(true);
+        setIsReprompting(true); // Mark that we're reprompting
+      }, 100);
     } else {
-      newStatus = 'cancel';
+      let newStatus;
+      if (decision === 'accept') {
+        newStatus = 'done';
+      } else if (decision === 'cancel') {
+        newStatus = 'cancel';
+      } else {
+        return; // Unknown decision
+      }
+      
+      await handleTaskMove(selectedTask.taskid, 'review', newStatus);
+      setSelectedTask(null);
+      setModalType(null);
     }
-    
-    await handleTaskMove(selectedTask.taskid, 'review', newStatus);
-    setSelectedTask(null);
-    setModalType(null);
   };
 
   // Filter tasks
@@ -561,7 +707,7 @@ function Board() {
         repos={repos}
         onSettingsClick={() => setIsSettingsOpen(true)}
       />
-      <AgentSection agents={agents} />
+      <AgentSection agents={agents} tasks={tasks} />
       <KanbanBoard
         tasks={filteredTasks}
         onTaskClick={handleTaskClick}
@@ -575,9 +721,24 @@ function Board() {
           onClose={() => {
             setIsCreateModalOpen(false);
             setEditingTask(null);
+            setIsReprompting(false);
           }}
           onCreate={handleCreateTask}
-          onUpdate={handleUpdateTask}
+          onUpdate={async (taskId, taskData) => {
+            const wasReprompting = isReprompting;
+            const originalStatus = editingTask?.status || 'review';
+            
+            await handleUpdateTask(taskId, taskData);
+            
+            // If this was a reprompt, move to progress after update
+            if (wasReprompting) {
+              setIsReprompting(false);
+              // Small delay to ensure update is saved to backend
+              setTimeout(async () => {
+                await handleTaskMove(taskId, originalStatus, 'progress');
+              }, 800);
+            }
+          }}
           notify={notify}
         />
       )}
@@ -609,6 +770,22 @@ function Board() {
           onClose={() => {
             setSelectedTask(null);
             setModalType(null);
+          }}
+          onDelete={async (taskId) => {
+            try {
+              await deleteBacklog(taskId);
+              setTasks(prev => {
+                const updatedTasks = prev.filter(t => t.taskid !== taskId);
+                updateAgentWorkload(updatedTasks);
+                return updatedTasks;
+              });
+              notify('Task deleted successfully', 2000, 'success');
+              setSelectedTask(null);
+              setModalType(null);
+            } catch (error) {
+              console.error('Error deleting task:', error);
+              notify('Failed to delete task', 3000, 'error');
+            }
           }}
         />
       )}
@@ -644,6 +821,7 @@ function Board() {
           onInviteMember={handleInviteMember}
           onRemoveMember={userRole === 'owner' ? handleRemoveMember : null}
           onError={(message) => notify(message, 3000, 'error')}
+          boardName={boardData?.name}
         />
       )}
     </div>
