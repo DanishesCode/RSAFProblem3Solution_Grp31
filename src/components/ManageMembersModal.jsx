@@ -6,10 +6,11 @@ export default function ManageMembersModal({
   onClose,
   onBack,
   members = [],
-  userRole = null, // 'owner' or 'editor'
+  userRole = null, 
   onInviteMember,
   onRemoveMember,
-  onError
+  onError,
+  boardName = null
 }) {
   const [inviteInput, setInviteInput] = useState("");
   const [isValidating, setIsValidating] = useState(false);
@@ -97,7 +98,7 @@ export default function ManageMembersModal({
               {" "}
               -{" "}
               <button type="button" className="mm-back" onClick={onBack}>
-                Back Agent Dashboard
+                {boardName || 'Back to Board'}
               </button>
             </span>
           </h2>
@@ -118,7 +119,7 @@ export default function ManageMembersModal({
                 handleInvite();
               }
             }}
-            placeholder="Invite new members by GitHub ID..."
+            placeholder="Invite new members by Collab ID..."
             disabled={isValidating}
           />
               <button
@@ -154,6 +155,13 @@ export default function ManageMembersModal({
           )}
 
           <div className="mm-list">
+            <div className="mm-row mm-header-row">
+              <div className="mm-left">
+                <div className="mm-name mm-header-text">Name</div>
+              </div>
+              <div className="mm-role mm-header-text">Role</div>
+              <div style={{ width: '140px' }}></div>
+            </div>
             {members.map((m) => (
               <div className="mm-row" key={m.id}>
                 <div className="mm-left">

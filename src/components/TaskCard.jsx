@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const TaskCard = ({ task, columnKey, onClick }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [ownerName, setOwnerName] = useState('Loading...');
 
   const handleDragStart = (e) => {
     setIsDragging(true);
@@ -27,6 +28,36 @@ const TaskCard = ({ task, columnKey, onClick }) => {
     if (!priority) return '';
     return priority.toLowerCase();
   };
+
+  // Fetch owner's GitHub name
+  useEffect(() => {
+    const fetchOwnerName = async () => {
+      if (!task.ownerId) {
+        setOwnerName('Unknown');
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:3000/users/github/${task.ownerId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+
+        if (res.ok) {
+          const userData = await res.json();
+          setOwnerName(userData.githubName || `User ${task.ownerId}`);
+        } else {
+          setOwnerName(`User ${task.ownerId}`);
+        }
+      } catch (error) {
+        console.error('Error fetching owner name:', error);
+        setOwnerName(`User ${task.ownerId}`);
+      }
+    };
+
+    fetchOwnerName();
+  }, [task.ownerId]);
 
   return (
     <div
@@ -63,7 +94,7 @@ const TaskCard = ({ task, columnKey, onClick }) => {
       )}
 
       <div className="agentSelected">Agent: {task.assignedAgent || 'Unknown'}</div>
-      <div className="repoSelected">Repo: {task.repo || 'No repo'}</div>
+      <div className="repoSelected">Owner: {ownerName}</div>
     </div>
   );
 };

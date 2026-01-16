@@ -20,7 +20,12 @@ const Header = ({
     <header>
       <div className="brand" onClick={() => navigate('/')}>
         <div className="logo">AI</div>
-        <div>Agentic</div>
+        <div>
+          Agentic
+          {tasks && tasks.length > 0 && (
+            <span className="task-total-text"> {tasks.length} tasks in total</span>
+          )}
+        </div>
       </div>
 
       <div className="search-bar">

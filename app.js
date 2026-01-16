@@ -78,11 +78,16 @@ app.get("/users/github/:githubId", githubController.getUserByGithubId);
 
 // Backlogs
 app.get("/backlog/getUserLogs", taskController.getBacklogsByUser);
+app.get("/backlog/getBoardLogs", taskController.getBacklogsByBoard);
 app.post("/backlog/save", taskController.createBacklog);
+app.put("/backlog/update", taskController.updateBacklog);
 app.put("/backlog/status-update", taskController.updateStatus);
+app.put("/backlog/update-agent-output", taskController.updateAgentOutput);
+app.delete("/backlog/delete", taskController.deleteBacklog);
 
 // Gemini
 app.post("/ai/gemini/generate", GeminiController.generateResponse);
+app.post("/ai/gemini/process-task", GeminiController.processTask);
 
 // OpenAI
 app.post("/ai/openai/generate", OpenAIController.generateResponse);

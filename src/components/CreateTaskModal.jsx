@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 
 const CreateTaskModal = ({ task, repos, onClose, onCreate, onUpdate, notify }) => {
   const [title, setTitle] = useState('');
+  const [prompt, setPrompt] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
   const [selectedTags, setSelectedTags] = useState([]);
-  const [requirements, setRequirements] = useState(['']);
-  const [acceptanceCriteria, setAcceptanceCriteria] = useState(['']);
-  const [selectedRepo, setSelectedRepo] = useState(null);
+  const [requirements, setRequirements] = useState([]);
+  const [requirementInput, setRequirementInput] = useState('');
   const [selectedAgent, setSelectedAgent] = useState(null);
 
   const tags = [
@@ -25,11 +25,11 @@ const CreateTaskModal = ({ task, repos, onClose, onCreate, onUpdate, notify }) =
   useEffect(() => {
     if (task) {
       setTitle(task.title || '');
+      setPrompt(task.prompt || '');
       setDescription(task.description || '');
       setPriority(task.priority || 'medium');
-      setRequirements(Array.isArray(task.requirements) ? task.requirements : ['']);
-      setAcceptanceCriteria(Array.isArray(task.acceptCrit) ? task.acceptCrit : ['']);
-      setSelectedRepo(task.repo || null);
+      setRequirements(Array.isArray(task.requirements) ? task.requirements.filter(r => r.trim() !== '') : []);
+      setRequirementInput('');
       setSelectedAgent(task.assignedAgent || null);
     } else {
       resetForm();
@@ -38,12 +38,12 @@ const CreateTaskModal = ({ task, repos, onClose, onCreate, onUpdate, notify }) =
 
   const resetForm = () => {
     setTitle('');
+    setPrompt('');
     setDescription('');
     setPriority('medium');
     setSelectedTags([]);
-    setRequirements(['']);
-    setAcceptanceCriteria(['']);
-    setSelectedRepo(null);
+    setRequirements([]);
+    setRequirementInput('');
     setSelectedAgent(null);
   };
 
@@ -56,69 +56,59 @@ const CreateTaskModal = ({ task, repos, onClose, onCreate, onUpdate, notify }) =
   };
 
   const addRequirement = () => {
-    setRequirements(prev => [...prev, '']);
+    const value = requirementInput.trim();
+    if (!value) return;
+    
+    // Check for duplicates
+    if (requirements.includes(value)) {
+      notify('This requirement already exists', 2000, 'error');
+      return;
+    }
+    
+    setRequirements(prev => [...prev, value]);
+    setRequirementInput('');
   };
 
-  const updateRequirement = (index, value) => {
-    setRequirements(prev => {
-      const updated = [...prev];
-      updated[index] = value;
-      return updated;
-    });
+  const removeRequirement = (requirement) => {
+    setRequirements(prev => prev.filter(r => r !== requirement));
   };
 
-  const addAcceptanceCriterion = () => {
-    setAcceptanceCriteria(prev => [...prev, '']);
-  };
-
-  const updateAcceptanceCriterion = (index, value) => {
-    setAcceptanceCriteria(prev => {
-      const updated = [...prev];
-      updated[index] = value;
-      return updated;
-    });
-  };
 
   const handleSubmit = async () => {
     const filteredRequirements = requirements.filter(r => r.trim() !== '');
-    const filteredAcceptance = acceptanceCriteria.filter(a => a.trim() !== '');
 
+    // Required fields validation
     if (!title.trim()) {
       notify('Task Title is required', 3000, 'error');
       return;
     }
-    if (!description.trim()) {
-      notify('Description is required', 3000, 'error');
+    if (!prompt.trim()) {
+      notify('Prompt is required', 3000, 'error');
       return;
     }
     if (!selectedAgent) {
-      notify('Assigned Agent is required', 3000, 'error');
-      return;
-    }
-    if (!selectedRepo) {
-      notify('GitHub Project is required', 3000, 'error');
-      return;
-    }
-    if (filteredRequirements.length === 0) {
-      notify('At least one Requirement is required', 3000, 'error');
-      return;
-    }
-    if (filteredAcceptance.length === 0) {
-      notify('At least one Acceptance Criterion is required', 3000, 'error');
+      notify('Assigned Agent (AI) is required', 3000, 'error');
       return;
     }
 
     const agent = agents.find(a => a.name === selectedAgent);
     
+    // Get repo from board data if available, otherwise use first repo
+    const repo = repos && repos.length > 0 ? repos[0] : '';
+    
+    // Get boardId from localStorage or props if available
+    const boardId = localStorage.getItem('selectedBoardId') || '';
+    
     const taskData = {
       title: title.trim(),
-      description: description.trim(),
+      prompt: prompt.trim(),
+      description: description.trim(), // Optional field
       priority,
-      requirements: filteredRequirements,
-      acceptanceCriteria: filteredAcceptance,
+      requirements: filteredRequirements, // Optional field
       assignedAgent: selectedAgent,
       agentId: agent?.id,
-      repo: selectedRepo,
+      repo: repo,
+      boardId: boardId,
       status: 'toDo'
     };
 
@@ -148,19 +138,30 @@ const CreateTaskModal = ({ task, repos, onClose, onCreate, onUpdate, notify }) =
           </div>
 
           <div className="modal-body">
-            <label>Task Title</label>
+            <label>Task Title <span style={{ color: 'red' }}>*</span></label>
             <input
               type="text"
-              placeholder="Enter task title..."
+              placeholder="Enter task title... (Required)"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              required
             />
 
-            <label>Description</label>
+            <label>Prompt <span style={{ color: 'red' }}>*</span></label>
             <textarea
-              placeholder="Describe the task in detail..."
+              placeholder="Enter your prompt here... (Required)"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              rows={6}
+              required
+            />
+
+            <label>Description (Optional)</label>
+            <textarea
+              placeholder="Enter task description (optional)..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              rows={4}
             />
 
             <label>Priority</label>
@@ -184,50 +185,49 @@ const CreateTaskModal = ({ task, repos, onClose, onCreate, onUpdate, notify }) =
               ))}
             </div>
 
-            <label>Requirements</label>
-            <div id="requirements-container">
-              {requirements.map((req, index) => (
-                <div key={index} className="add-row">
-                  <input
-                    type="text"
-                    value={req}
-                    onChange={(e) => updateRequirement(index, e.target.value)}
-                    placeholder="Enter requirement..."
-                  />
-                  <button className="add-btn" onClick={addRequirement}>+</button>
-                </div>
-              ))}
+            <label>Requirements (Optional)</label>
+            <div className="requirement-input-row">
+              <input
+                type="text"
+                value={requirementInput}
+                onChange={(e) => setRequirementInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addRequirement();
+                  }
+                }}
+                placeholder="Enter requirement and press Enter..."
+                className="requirement-input"
+              />
+              <button 
+                className="requirement-add-btn" 
+                onClick={addRequirement}
+                type="button"
+              >
+                Add
+              </button>
             </div>
+            
+            {requirements.length > 0 && (
+              <div className="requirement-tags">
+                {requirements.map((req, index) => (
+                  <span key={index} className="requirement-tag">
+                    {req}
+                    <button
+                      type="button"
+                      className="requirement-tag-remove"
+                      onClick={() => removeRequirement(req)}
+                      aria-label={`Remove ${req}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
 
-            <label>Acceptance Criteria</label>
-            <div id="acceptance-container">
-              {acceptanceCriteria.map((acc, index) => (
-                <div key={index} className="add-row">
-                  <input
-                    type="text"
-                    value={acc}
-                    onChange={(e) => updateAcceptanceCriterion(index, e.target.value)}
-                    placeholder="Enter acceptance criterion..."
-                  />
-                  <button className="add-btn" onClick={addAcceptanceCriterion}>+</button>
-                </div>
-              ))}
-            </div>
-
-            <label className="github-label">Select GitHub Project</label>
-            <div className="github-projects">
-              {repos.map(repo => (
-                <div
-                  key={repo}
-                  className={`repo-card ${selectedRepo === repo ? 'selected' : ''}`}
-                  onClick={() => setSelectedRepo(repo)}
-                >
-                  <strong value={repo}>{repo}</strong>
-                </div>
-              ))}
-            </div>
-
-            <label className="assign-label">Assign Agent</label>
+            <label className="assign-label">Assign Agent (AI) <span style={{ color: 'red' }}>*</span></label>
             {filteredAgents.map(agent => (
               <div
                 key={agent.id}

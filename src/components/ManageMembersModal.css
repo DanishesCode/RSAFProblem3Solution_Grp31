@@ -73,14 +73,29 @@
     border-top: 1px solid #d9d9d9;
   }
   
-  .mm-row {
-    display: grid;
-    grid-template-columns: 1fr 160px 140px;
-    align-items: center;
-    padding: 14px 4px;
-    border-bottom: 1px solid #d9d9d9;
-    column-gap: 14px;
-  }
+.mm-row {
+  display: grid;
+  grid-template-columns: 1fr 160px 140px;
+  align-items: center;
+  padding: 14px 4px;
+  border-bottom: 1px solid #d9d9d9;
+  column-gap: 14px;
+}
+
+.mm-header-row {
+  font-weight: 600;
+  color: #666;
+  border-bottom: 2px solid #ccc;
+  padding: 8px 4px;
+}
+
+.mm-header-text {
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
   
   .mm-left {
     display: flex;
