@@ -8,18 +8,66 @@ export default function ManageMembersModal({
   members = [],
   userRole = null, // 'owner' or 'editor'
   onInviteMember,
-  onRemoveMember
+  onRemoveMember,
+  onError
 }) {
   const [inviteInput, setInviteInput] = useState("");
+  const [isValidating, setIsValidating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   if (!isOpen) return null;
 
   const canRemove = userRole === 'owner';
   const canInvite = userRole === 'owner' || userRole === 'editor';
 
-  const handleInvite = () => {
+  const validateGitHubId = async (githubId) => {
+    try {
+      const res = await fetch(`http://localhost:3000/users/github/${githubId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      
+      if (res.ok) {
+        const user = await res.json();
+        return { valid: true, user };
+      } else {
+        return { valid: false, error: 'User not found' };
+      }
+    } catch (error) {
+      return { valid: false, error: 'Failed to validate GitHub ID' };
+    }
+  };
+
+  const handleInvite = async () => {
     const githubId = inviteInput.trim();
     if (!githubId) return;
+    
+    // Check if already a member
+    if (members.some(m => m.githubId === githubId || String(m.id) === String(githubId))) {
+      if (onError) {
+        onError('This user is already a member');
+      } else {
+        alert('This user is already a member');
+      }
+      return;
+    }
+    
+    setIsValidating(true);
+    const validation = await validateGitHubId(githubId);
+    setIsValidating(false);
+    
+    if (!validation.valid) {
+      const errorMsg = `Invalid GitHub ID: ${githubId}. User not found.`;
+      setErrorMessage(errorMsg);
+      setTimeout(() => setErrorMessage(""), 3000);
+      if (onError) {
+        onError(errorMsg);
+      }
+      return;
+    }
+    
+    setErrorMessage("");
     
     if (onInviteMember) {
       onInviteMember(githubId);
@@ -60,30 +108,48 @@ export default function ManageMembersModal({
             <div style={{ display: 'flex', gap: '8px' }}>
               <input
                 className="mm-invite"
-                value={inviteInput}
-                onChange={(e) => setInviteInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleInvite();
-                  }
-                }}
-                placeholder="Invite new members by GitHub ID..."
-              />
+            value={inviteInput}
+            onChange={(e) => {
+              setInviteInput(e.target.value);
+              setErrorMessage("");
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !isValidating) {
+                handleInvite();
+              }
+            }}
+            placeholder="Invite new members by GitHub ID..."
+            disabled={isValidating}
+          />
               <button
                 type="button"
                 onClick={handleInvite}
+                disabled={isValidating}
                 style={{
                   padding: '8px 16px',
-                  background: '#2f6fe4',
+                  background: isValidating ? '#ccc' : '#2f6fe4',
                   color: '#fff',
                   border: 'none',
                   borderRadius: '6px',
-                  cursor: 'pointer',
+                  cursor: isValidating ? 'not-allowed' : 'pointer',
                   fontSize: '14px'
                 }}
               >
-                Invite
+                {isValidating ? 'Validating...' : 'Invite'}
               </button>
+            </div>
+          )}
+          
+          {errorMessage && (
+            <div style={{ 
+              color: '#d32f2f', 
+              fontSize: '14px', 
+              marginTop: '8px',
+              padding: '8px',
+              background: '#ffebee',
+              borderRadius: '4px'
+            }}>
+              {errorMessage}
             </div>
           )}
 

@@ -13,7 +13,9 @@ export default function CreateBoardModal({
   const [selectedRepo, setSelectedRepo] = useState(repoOptions[0] || "");
   const [boardName, setBoardName] = useState("");
   const [inviteInput, setInviteInput] = useState("");
-  const [team, setTeam] = useState([]); // array of emails/names
+  const [team, setTeam] = useState([]); // array of GitHub IDs
+  const [isValidating, setIsValidating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   // reset when opening
   useEffect(() => {
@@ -36,21 +38,83 @@ export default function CreateBoardModal({
 
   if (!isOpen) return null;
 
-  const addInvite = () => {
+  const validateGitHubId = async (githubId) => {
+    try {
+      const res = await fetch(`http://localhost:3000/users/github/${githubId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      
+      if (res.ok) {
+        const user = await res.json();
+        return { valid: true, user };
+      } else {
+        return { valid: false, error: 'User not found' };
+      }
+    } catch (error) {
+      return { valid: false, error: 'Failed to validate GitHub ID' };
+    }
+  };
+
+  const addInvite = async () => {
     const value = inviteInput.trim();
     if (!value) return;
-    setTeam((prev) => (prev.includes(value) ? prev : [...prev, value]));
+    
+    // Check if already in team
+    if (team.includes(value)) {
+      setErrorMessage('This GitHub ID is already in the team');
+      setTimeout(() => setErrorMessage(""), 3000);
+      return;
+    }
+    
+    setIsValidating(true);
+    setErrorMessage("");
+    
+    const validation = await validateGitHubId(value);
+    setIsValidating(false);
+    
+    if (!validation.valid) {
+      setErrorMessage(`Invalid GitHub ID: ${value}. User not found.`);
+      setTimeout(() => setErrorMessage(""), 3000);
+      return;
+    }
+    
+    setTeam((prev) => [...prev, value]);
     setInviteInput("");
+    setErrorMessage("");
   };
 
   const removeInvite = (value) => {
     setTeam((prev) => prev.filter((x) => x !== value));
   };
 
-  const submit = () => {
+  const submit = async () => {
     const name = boardName.trim();
     if (!selectedRepo) return;
     if (!name) return;
+
+    // Validate all team members before submitting
+    if (team.length > 0) {
+      setIsValidating(true);
+      setErrorMessage("");
+      
+      const invalidIds = [];
+      for (const githubId of team) {
+        const validation = await validateGitHubId(githubId);
+        if (!validation.valid) {
+          invalidIds.push(githubId);
+        }
+      }
+      
+      setIsValidating(false);
+      
+      if (invalidIds.length > 0) {
+        setErrorMessage(`Invalid GitHub IDs: ${invalidIds.join(', ')}. These users were not found.`);
+        setTimeout(() => setErrorMessage(""), 5000);
+        return;
+      }
+    }
 
     onCreate?.({
       repo: selectedRepo,
@@ -105,16 +169,40 @@ export default function CreateBoardModal({
           <input
             className="cbm-input"
             value={inviteInput}
-            onChange={(e) => setInviteInput(e.target.value)}
-            placeholder="Add people by GitHub ID (comma-separated)..."
-            onKeyDown={(e) => {
-              if (e.key === "Enter") addInvite();
+            onChange={(e) => {
+              setInviteInput(e.target.value);
+              setErrorMessage("");
             }}
+            placeholder="Add people by GitHub ID..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !isValidating) {
+                addInvite();
+              }
+            }}
+            disabled={isValidating}
           />
-          <button className="cbm-invite-btn" type="button" onClick={addInvite}>
-            Invite
+          <button 
+            className="cbm-invite-btn" 
+            type="button" 
+            onClick={addInvite}
+            disabled={isValidating}
+          >
+            {isValidating ? "Validating..." : "Invite"}
           </button>
         </div>
+        
+        {errorMessage && (
+          <div style={{ 
+            color: '#d32f2f', 
+            fontSize: '14px', 
+            marginTop: '8px',
+            padding: '8px',
+            background: '#ffebee',
+            borderRadius: '4px'
+          }}>
+            {errorMessage}
+          </div>
+        )}
 
         {/* chips */}
         {team.length > 0 && (

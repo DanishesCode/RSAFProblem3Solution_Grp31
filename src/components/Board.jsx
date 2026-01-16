@@ -639,6 +639,7 @@ function Board() {
           userRole={userRole}
           onInviteMember={handleInviteMember}
           onRemoveMember={userRole === 'owner' ? handleRemoveMember : null}
+          onError={(message) => notify(message, 3000, 'error')}
         />
       )}
     </div>
