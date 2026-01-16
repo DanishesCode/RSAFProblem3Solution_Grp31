@@ -1,0 +1,159 @@
+.mm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5000;
+    padding: 24px;
+  }
+  
+  .mm-modal {
+    width: min(900px, 92vw);
+    height: min(560px, 85vh);
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    padding: 28px 32px;
+  }
+  
+  .mm-header {
+    flex-shrink: 0;
+    margin-bottom: 18px;
+  }
+  
+  .mm-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #111;
+    margin: 0;
+  }
+  
+  .mm-subtitle {
+    font-weight: 400;
+    color: #222;
+  }
+  
+  .mm-back {
+    border: none;
+    background: transparent;
+    color: #111;
+    font: inherit;
+    cursor: pointer;
+    text-decoration: none; /* screenshot looks like normal text */
+    padding: 0;
+  }
+  
+  .mm-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .mm-invite {
+    width: 100%;
+    height: 40px;
+    border: 1px solid #cfcfcf;
+    border-radius: 6px;
+    padding: 0 12px;
+    font-size: 14px;
+    outline: none;
+  }
+  
+  .mm-invite:focus {
+    border-color: #9bb7ff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+  
+  .mm-list {
+    margin-top: 18px;
+    border-top: 1px solid #d9d9d9;
+  }
+  
+  .mm-row {
+    display: grid;
+    grid-template-columns: 1fr 160px 140px;
+    align-items: center;
+    padding: 14px 4px;
+    border-bottom: 1px solid #d9d9d9;
+    column-gap: 14px;
+  }
+  
+  .mm-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  
+  .mm-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #d7d7d7;
+    flex-shrink: 0;
+  }
+  
+  .mm-name {
+    font-size: 14px;
+    color: #111;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .mm-role {
+    font-size: 14px;
+    color: #222;
+    text-align: center; /* matches screenshot’s centered role */
+  }
+  
+  .mm-remove {
+    justify-self: end;
+    border: none;
+    background: transparent;
+    color: #111;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+  }
+  
+  .mm-remove:hover {
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 6px;
+  }
+  
+  .mm-x {
+    font-size: 18px;
+    line-height: 1;
+    margin-top: -1px;
+  }
+  
+  .mm-footer {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 18px;
+  }
+  
+  .mm-done {
+    background: #2f6fe4;
+    color: #fff;
+    border: none;
+    height: 40px;
+    padding: 0 28px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  .mm-done:hover {
+    filter: brightness(0.95);
+  }
+  

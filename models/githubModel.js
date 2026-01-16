@@ -65,9 +65,30 @@ async function saveGitData(githubId, githubName = "") {
   }
 }
 
+/**
+ * Get user data by githubId from Firestore
+ */
+async function getUserByGithubId(githubId) {
+  try {
+    const docId = String(githubId);
+    const ref = db.collection(USERS_COLLECTION).doc(docId);
+    const snap = await ref.get();
+    
+    if (!snap.exists) {
+      return null;
+    }
+    
+    return { userId: snap.id, ...snap.data() };
+  } catch (error) {
+    console.error("Error getting user by githubId:", error);
+    throw error;
+  }
+}
+
 module.exports = {
   githubExchangeCode,
   githubGetUser,
   githubGetRepos,
   saveGitData,
+  getUserByGithubId,
 };

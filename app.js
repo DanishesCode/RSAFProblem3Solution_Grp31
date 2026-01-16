@@ -74,6 +74,7 @@ app.post("/boards/:boardId/members", boardController.addMembers);
 // GitHub OAuth
 app.get("/github", githubController.githubRedirect);
 app.get("/github/callback", githubController.githubCallback);
+app.get("/users/github/:githubId", githubController.getUserByGithubId);
 
 // Backlogs
 app.get("/backlog/getUserLogs", taskController.getBacklogsByUser);

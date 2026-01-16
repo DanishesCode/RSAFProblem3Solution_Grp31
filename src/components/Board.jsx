@@ -10,6 +10,7 @@ import CancelledModal from './CancelledModal';
 import ActivitySidebar from './ActivitySidebar';
 import InProgressPanel from './InProgressPanel';
 import NotificationContainer from './NotificationContainer';
+import ManageMembersModal from './ManageMembersModal';
 import { initializeLogs, saveBacklog, updateTaskStatus } from '../services/api';
 import { isValidTransition } from '../utils/taskTransitions';
 import { useAgentStreaming } from '../hooks/useAgentStreaming';
@@ -17,7 +18,9 @@ import '../styles.css';
 
 function Board() {
   const navigate = useNavigate();
-  const { boardId } = useParams();
+  const { boardId: boardIdFromParams } = useParams();
+  // Get boardId from URL params or localStorage
+  const boardId = boardIdFromParams || localStorage.getItem('selectedBoardId');
   const [tasks, setTasks] = useState([]);
   const [agents, setAgents] = useState([
     { id: 1, name: 'Claude', status: 'working', workload: 0 },
@@ -36,6 +39,10 @@ function Board() {
   const [notifications, setNotifications] = useState([]);
   const [inProgressTask, setInProgressTask] = useState(null);
   const [repos, setRepos] = useState([]);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [boardData, setBoardData] = useState(null);
+  const [boardMembers, setBoardMembers] = useState([]);
+  const [userRole, setUserRole] = useState(null); // 'owner' or 'editor'
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     // Initialize auth state from localStorage immediately
     return !!localStorage.getItem('githubId');
@@ -93,6 +100,78 @@ function Board() {
       status: agentWork[agent.id] > 0 ? 'working' : 'offline'
     })));
   }, []);
+
+  // Load board data if boardId is provided
+  useEffect(() => {
+    if (!isAuthenticated || !boardId) return;
+    
+    const loadBoardData = async () => {
+      try {
+        const res = await fetch(`http://localhost:3000/boards/${boardId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+        
+        if (res.ok) {
+          const board = await res.json();
+          setBoardData(board);
+          
+          // Determine user role
+          const currentUserId = localStorage.getItem('userId') || localStorage.getItem('githubId');
+          if (board.ownerId === currentUserId) {
+            setUserRole('owner');
+          } else if (board.memberIds?.includes(currentUserId)) {
+            setUserRole('editor');
+          }
+          
+          // Load member data with GitHub usernames
+          if (board.memberIds && board.memberIds.length > 0) {
+            // Fetch GitHub usernames for all members
+            const memberPromises = board.memberIds.map(async (id) => {
+              try {
+                const userRes = await fetch(`http://localhost:3000/users/github/${id}`, {
+                  method: 'GET',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                });
+                
+                let githubName = `User ${id}`;
+                if (userRes.ok) {
+                  const userData = await userRes.json();
+                  githubName = userData.githubName || githubName;
+                }
+                
+                return {
+                  id: id,
+                  name: githubName,
+                  role: id === board.ownerId ? 'Owner' : 'Editor',
+                  githubId: id
+                };
+              } catch (error) {
+                console.error(`Error fetching user ${id}:`, error);
+                return {
+                  id: id,
+                  name: `User ${id}`,
+                  role: id === board.ownerId ? 'Owner' : 'Editor',
+                  githubId: id
+                };
+              }
+            });
+            
+            const members = await Promise.all(memberPromises);
+            setBoardMembers(members);
+          } else {
+            setBoardMembers([]);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading board data:', error);
+      }
+    };
+    
+    loadBoardData();
+  }, [isAuthenticated, boardId]);
 
   // Load initial tasks - only when authenticated
   useEffect(() => {
@@ -310,6 +389,151 @@ function Board() {
     }
   };
 
+  // Handle inviting members
+  const handleInviteMember = async (githubId) => {
+    if (!boardId) {
+      notify('No board selected', 3000, 'error');
+      return;
+    }
+    
+    try {
+      const res = await fetch(`http://localhost:3000/boards/${boardId}/members`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ memberIds: [githubId] }),
+      });
+      
+      if (res.ok) {
+        const updated = await res.json();
+        
+        // Refresh board members with GitHub usernames
+        if (updated.memberIds && updated.memberIds.length > 0) {
+          const memberPromises = updated.memberIds.map(async (id) => {
+            try {
+              const userRes = await fetch(`http://localhost:3000/users/github/${id}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+              });
+              
+              let githubName = `User ${id}`;
+              if (userRes.ok) {
+                const userData = await userRes.json();
+                githubName = userData.githubName || githubName;
+              }
+              
+              return {
+                id: id,
+                name: githubName,
+                role: id === updated.ownerId ? 'Owner' : 'Editor',
+                githubId: id
+              };
+            } catch (error) {
+              return {
+                id: id,
+                name: `User ${id}`,
+                role: id === updated.ownerId ? 'Owner' : 'Editor',
+                githubId: id
+              };
+            }
+          });
+          
+          const members = await Promise.all(memberPromises);
+          setBoardMembers(members);
+        } else {
+          setBoardMembers([]);
+        }
+        
+        setBoardData(updated);
+        notify('Member added successfully', 2000, 'success');
+      } else {
+        const error = await res.json().catch(() => ({ error: 'Failed to add member' }));
+        notify(error.error || 'Failed to add member', 3000, 'error');
+      }
+    } catch (error) {
+      console.error('Error inviting member:', error);
+      notify('Failed to invite member', 3000, 'error');
+    }
+  };
+
+  // Handle removing members (only for owner)
+  const handleRemoveMember = async (member) => {
+    if (!boardId || userRole !== 'owner') {
+      notify('Only the owner can remove members', 3000, 'error');
+      return;
+    }
+    
+    if (member.role === 'Owner') {
+      notify('Cannot remove the owner', 3000, 'error');
+      return;
+    }
+    
+    try {
+      // Get current memberIds and remove the member
+      const currentMemberIds = boardData.memberIds || [];
+      const updatedMemberIds = currentMemberIds.filter(id => id !== member.githubId);
+      
+      const res = await fetch(`http://localhost:3000/boards/${boardId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ memberIds: updatedMemberIds }),
+      });
+      
+      if (res.ok) {
+        const updated = await res.json();
+        
+        // Refresh board members with GitHub usernames
+        if (updated.memberIds && updated.memberIds.length > 0) {
+          const memberPromises = updated.memberIds.map(async (id) => {
+            try {
+              const userRes = await fetch(`http://localhost:3000/users/github/${id}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+              });
+              
+              let githubName = `User ${id}`;
+              if (userRes.ok) {
+                const userData = await userRes.json();
+                githubName = userData.githubName || githubName;
+              }
+              
+              return {
+                id: id,
+                name: githubName,
+                role: id === updated.ownerId ? 'Owner' : 'Editor',
+                githubId: id
+              };
+            } catch (error) {
+              return {
+                id: id,
+                name: `User ${id}`,
+                role: id === updated.ownerId ? 'Owner' : 'Editor',
+                githubId: id
+              };
+            }
+          });
+          
+          const members = await Promise.all(memberPromises);
+          setBoardMembers(members);
+        } else {
+          setBoardMembers([]);
+        }
+        
+        setBoardData(updated);
+        notify('Member removed successfully', 2000, 'success');
+      } else {
+        const error = await res.json().catch(() => ({ error: 'Failed to remove member' }));
+        notify(error.error || 'Failed to remove member', 3000, 'error');
+      }
+    } catch (error) {
+      console.error('Error removing member:', error);
+      notify('Failed to remove member', 3000, 'error');
+    }
+  };
+
   // Don't render if not authenticated (will redirect)
   if (!isAuthenticated) {
     return null;
@@ -331,6 +555,7 @@ function Board() {
         onFilterChange={setFilters}
         tasks={tasks}
         repos={repos}
+        onSettingsClick={() => setIsSettingsOpen(true)}
       />
       <AgentSection agents={agents} />
       <KanbanBoard
@@ -399,6 +624,21 @@ function Board() {
               agentProcess: (inProgressTask.agentProcess || '') + chunk
             });
           }}
+        />
+      )}
+
+      {isSettingsOpen && (
+        <ManageMembersModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          onBack={() => {
+            setIsSettingsOpen(false);
+            navigate('/');
+          }}
+          members={boardMembers}
+          userRole={userRole}
+          onInviteMember={handleInviteMember}
+          onRemoveMember={userRole === 'owner' ? handleRemoveMember : null}
         />
       )}
     </div>
