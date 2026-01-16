@@ -168,6 +168,7 @@ async function getBacklogsByBoardId(boardId) {
 module.exports = {
   createBacklogItem,
   updateBacklogItemStatus,
+  updateTaskAgentOutput,
   getBacklogsByUserId,
   getBacklogsByBoardId
 };
