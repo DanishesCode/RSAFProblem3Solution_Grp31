@@ -1,31 +1,175 @@
-body { 
-    font-family: Arial, sans-serif; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    height: 100vh; 
-    background: #f5f5f5; 
+/* Safe base */
+.githubBtn {
+  margin-top: 18px;
 }
 
-.login-container { 
-    text-align: center; 
-    background: #fff; 
-    padding: 40px; 
-    border-radius: 10px; 
-    box-shadow: 0 0 15px rgba(0,0,0,0.2); 
+.page--login {
+  min-height: 100vh;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+
+  background:
+    radial-gradient(900px 500px at 20% 10%, rgba(183,165,139,0.25), transparent 60%),
+    radial-gradient(700px 400px at 80% 20%, rgba(183,165,139,0.18), transparent 55%),
+    linear-gradient(180deg, #faf8f4 0%, #f3f0ea 60%, #efeae1 100%);
 }
 
-#github-login-btn { 
-    background: #333; 
-    color: #fff; 
-    padding: 10px 20px; 
-    border: none; 
-    border-radius: 5px; 
-    cursor: pointer; 
-    font-size: 16px; 
+.loginShell {
+  width: min(980px, 100%);
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 22px;
+  align-items: stretch;
 }
 
-#github-login-btn:hover { 
-    background: #555; 
+@media (max-width: 860px) {
+  .loginShell { grid-template-columns: 1fr; }
 }
 
+.brandPanel {
+  background: linear-gradient(135deg, rgba(183,165,139,0.22), rgba(183,165,139,0.08));
+  border: 1px solid rgba(31,41,55,0.12);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 18px 40px rgba(31,41,55,0.12);
+}
+
+.brandTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brandBadge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,0.65);
+  border: 1px solid rgba(31,41,55,0.12);
+  font-weight: 800;
+  color: #111827;
+}
+
+.brandTitle {
+  font-weight: 800;
+  font-size: 18px;
+  color: #111827;
+}
+
+.brandTag {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.brandSubtitle {
+  margin-top: 14px;
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: 800;
+  color: #111827;
+}
+
+.brandDesc {
+  margin-top: 10px;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 52ch;
+}
+
+.featureList {
+  margin: 20px 0 0;
+  padding-left: 18px;
+  color: #374151;
+  display: grid;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.loginCard {
+  background: #ffffff;
+  border: 1px solid rgba(31,41,55,0.12);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 18px 40px rgba(31,41,55,0.12);
+}
+
+.loginHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.loginHeader h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #111827;
+  white-space: nowrap;   /* ← KEY FIX */
+}
+
+.loginHeader p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  height: 1px;
+  background: rgba(31,41,55,0.10);
+  flex: 1;
+}
+
+.btnSecondary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  text-decoration: none;
+  background: #111827;
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 10px 22px rgba(17,24,39,0.20);
+}
+
+.btnSecondary:hover { background: #0b1220; }
+
+.btnPrimary {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 0;
+  background: #b7a58b;
+  color: #1b1b1b;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(183,165,139,0.35);
+}
+
+.btnPrimary:hover { background: #9a8568; }
+
+.note {
+  margin-top: 14px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.45;
+}

@@ -52,12 +52,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// ----------------------------------------------------
-// (B) LOGIN PAGE (static HTML)
-// ----------------------------------------------------
-app.get("/login", (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "login", "login.html"));
-});
 
 // ----------------------------------------------------
 // (C) API ROUTES (yours)
@@ -123,9 +117,7 @@ async function startServer() {
   // IMPORTANT: Serve public assets but do NOT let it serve public/index.html at "/"
   // This prevents your main React site from being replaced by public/index.html
 
-app.get("/legacy", (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+
   app.use(express.static(path.join(__dirname, "public"), { index: false }));
 
   // DEV: Serve the Vite React app for "/" and other non-API routes
