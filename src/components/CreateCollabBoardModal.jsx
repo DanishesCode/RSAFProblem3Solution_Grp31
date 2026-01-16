@@ -106,7 +106,7 @@ export default function CreateBoardModal({
             className="cbm-input"
             value={inviteInput}
             onChange={(e) => setInviteInput(e.target.value)}
-            placeholder="Add people by name or email..."
+            placeholder="Add people by GitHub ID (comma-separated)..."
             onKeyDown={(e) => {
               if (e.key === "Enter") addInvite();
             }}

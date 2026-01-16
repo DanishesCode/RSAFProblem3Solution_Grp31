@@ -37,6 +37,8 @@ exports.listBoardsForUser = async (req, res) => {
     let boards;
     if (type === "personal") {
       boards = await BoardModel.listPersonalBoardsForUser(String(userId));
+    } else if (type === "collab") {
+      boards = await BoardModel.listCollabBoardsForUser(String(userId));
     } else {
       boards = await BoardModel.listBoardsForUser(String(userId));
     }
@@ -81,5 +83,21 @@ exports.deleteBoard = async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     res.status(400).json({ error: err.message || "Failed to delete board" });
+  }
+};
+
+exports.addMembers = async (req, res) => {
+  try {
+    const { boardId } = req.params;
+    const { memberIds } = req.body;
+    
+    if (!Array.isArray(memberIds) || memberIds.length === 0) {
+      return res.status(400).json({ error: "memberIds must be a non-empty array" });
+    }
+    
+    const updated = await BoardModel.addMembersToBoard(boardId, memberIds);
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ error: err.message || "Failed to add members" });
   }
 };

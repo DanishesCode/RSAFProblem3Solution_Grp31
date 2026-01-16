@@ -43,6 +43,67 @@ async function listBoardsForUser(userId) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+async function listCollabBoardsForUser(userId) {
+  try {
+    // Try query with both filters (requires composite index)
+    const snap = await db
+      .collection("boards")
+      .where("memberIds", "array-contains", userId)
+      .where("type", "==", "collab")
+      .orderBy("updatedAt", "desc")
+      .get();
+
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (error) {
+    // Fallback: fetch all user boards and filter by type in JavaScript
+    const isIndexError = 
+      error.code === 9 || 
+      error.code === 'FAILED_PRECONDITION' ||
+      error.message?.includes("index") ||
+      error.message?.includes("requires an index");
+    
+    if (isIndexError) {
+      console.warn("[boardModel] Composite index missing for collab boards, using fallback filter");
+      try {
+        try {
+          const snap = await db
+            .collection("boards")
+            .where("memberIds", "array-contains", userId)
+            .orderBy("updatedAt", "desc")
+            .get();
+
+          const allBoards = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          const collabBoards = allBoards.filter((board) => board.type === "collab");
+          collabBoards.sort((a, b) => {
+            const aTime = a.updatedAt?.toMillis?.() || a.updatedAt?._seconds || 0;
+            const bTime = b.updatedAt?.toMillis?.() || b.updatedAt?._seconds || 0;
+            return bTime - aTime;
+          });
+          return collabBoards;
+        } catch (orderByError) {
+          const snap = await db
+            .collection("boards")
+            .where("memberIds", "array-contains", userId)
+            .get();
+
+          const allBoards = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          const collabBoards = allBoards.filter((board) => board.type === "collab");
+          collabBoards.sort((a, b) => {
+            const aTime = a.updatedAt?.toMillis?.() || a.updatedAt?._seconds || a.createdAt?.toMillis?.() || a.createdAt?._seconds || 0;
+            const bTime = b.updatedAt?.toMillis?.() || b.updatedAt?._seconds || b.createdAt?.toMillis?.() || b.createdAt?._seconds || 0;
+            return bTime - aTime;
+          });
+          return collabBoards;
+        }
+      } catch (fallbackError) {
+        console.error("[boardModel] All fallback queries failed:", fallbackError);
+        throw fallbackError;
+      }
+    }
+    throw error;
+  }
+}
+
 async function listPersonalBoardsForUser(userId) {
   try {
     // Try query with both filters (requires composite index)
@@ -126,11 +187,33 @@ async function deleteBoard(boardId) {
   return true;
 }
 
+async function addMembersToBoard(boardId, memberIds) {
+  const ref = db.collection("boards").doc(boardId);
+  const board = await ref.get();
+  
+  if (!board.exists) {
+    throw new Error("Board not found");
+  }
+  
+  const currentMemberIds = board.data().memberIds || [];
+  const newMemberIds = Array.from(new Set([...currentMemberIds, ...memberIds])).filter(Boolean);
+  
+  await ref.update({
+    memberIds: newMemberIds,
+    updatedAt: now(),
+  });
+  
+  const updated = await ref.get();
+  return { id: updated.id, ...updated.data() };
+}
+
 module.exports = {
   createBoard,
   getBoard,
   listBoardsForUser,
   listPersonalBoardsForUser,
+  listCollabBoardsForUser,
   updateBoard,
   deleteBoard,
+  addMembersToBoard,
 };

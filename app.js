@@ -69,6 +69,7 @@ app.get("/users/:userId/boards", boardController.listBoardsForUser);
 app.get("/boards/:boardId", boardController.getBoard);
 app.post("/boards/:boardId", boardController.updateBoard);
 app.delete("/boards/:boardId", boardController.deleteBoard);
+app.post("/boards/:boardId/members", boardController.addMembers);
 
 // GitHub OAuth
 app.get("/github", githubController.githubRedirect);
