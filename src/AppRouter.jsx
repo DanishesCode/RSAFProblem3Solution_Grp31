@@ -6,7 +6,7 @@ import SelectionPage from './components/SelectionPage';
 import GitHubCallback from './components/GitHubCallback';
 import MyBoards from './components/MyBoards';
 import MyCollabs from './components/MyCollabs';
-import App from './app.jsx';
+import Board from './components/Board';
 
 const AppRouter = () => {
   return (
@@ -21,9 +21,10 @@ const AppRouter = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/github/callback" element={<GitHubCallback />} />
         <Route path="/myboards" element={<MyBoards />} />
-        <Route path="/selectionpage" element={<SelectionPage />} />
-        <Route path="/" element={<App />} />
+        <Route path="/board" element={<Board />} />
+        <Route path="/board/:boardId" element={<Board />} />
         <Route path="/collaborations" element={<MyCollabs />} />
+        <Route path="/" element={<SelectionPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

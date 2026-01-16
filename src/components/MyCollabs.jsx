@@ -194,7 +194,7 @@ export default function MyCollabs() {
                     } catch (err) {
                       console.warn("[MyCollabs] Failed to save boardId to localStorage:", err);
                     }
-                    navigate(`/collab/${c.id}`);
+                    navigate(`/board/${boardId}`);
                   }}
                 >
                   <div className="mc-card-title">{c.title}</div>

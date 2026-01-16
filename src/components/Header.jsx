@@ -11,7 +11,8 @@ const Header = ({
   isFilterOpen,
   onFilterChange,
   tasks,
-  repos
+  repos,
+  onSettingsClick
 }) => {
   const navigate = useNavigate();
 
@@ -50,7 +51,19 @@ const Header = ({
 
       <div className="top-buttons">
         <button className="btn-activity" onClick={onActivityClick}>Activity</button>
-        <button className="btn-new" onClick={onNewTask}>+ New Task</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button className="btn-new" onClick={onNewTask}>+ New Task</button>
+          {onSettingsClick && (
+            <button 
+              className="btn-settings" 
+              onClick={onSettingsClick}
+              title="Settings"
+              aria-label="Settings"
+            >
+              ⚙️
+            </button>
+          )}
+        </div>
       </div>
     </header>
   );

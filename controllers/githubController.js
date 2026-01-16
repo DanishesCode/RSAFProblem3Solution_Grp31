@@ -59,7 +59,26 @@ const githubCallback = async (req, res) => {
   }
 };
 
+// Get user by githubId
+const getUserByGithubId = async (req, res) => {
+  try {
+    const { githubId } = req.params;
+    const { getUserByGithubId: getUser } = require("../models/githubModel");
+    
+    const user = await getUser(githubId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    res.json(user);
+  } catch (err) {
+    console.error("Error getting user:", err);
+    res.status(400).json({ error: err.message || "Failed to get user" });
+  }
+};
+
 module.exports = {
   githubRedirect,
-  githubCallback
+  githubCallback,
+  getUserByGithubId
 };

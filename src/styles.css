@@ -89,8 +89,13 @@ header {
     margin-left: 8px;
 }
 
+.top-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .top-buttons button {
-    margin-left: 10px;
     padding: 8px 12px;
     border-radius: 8px;
     border: none;
@@ -100,6 +105,15 @@ header {
 
 .btn-activity { background: var(--muted); }
 .btn-new { background: var(--accent); color: white; }
+.btn-settings { 
+  background: var(--muted); 
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  padding: 8px;
+}
 
 .agents {
     display: flex;
