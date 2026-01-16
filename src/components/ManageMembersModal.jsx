@@ -10,7 +10,8 @@ export default function ManageMembersModal({
   onInviteMember,
   onRemoveMember,
   onError,
-  boardName = null
+  boardName = null,
+  repo = null
 }) {
   const [inviteInput, setInviteInput] = useState("");
   const [isValidating, setIsValidating] = useState(false);
@@ -102,6 +103,11 @@ export default function ManageMembersModal({
               </button>
             </span>
           </h2>
+          {repo && (
+            <div className="mm-repo-text">
+              Repo: {repo}
+            </div>
+          )}
         </div>
 
         <div className="mm-body">

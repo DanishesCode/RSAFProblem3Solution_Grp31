@@ -822,6 +822,7 @@ function Board() {
           onRemoveMember={userRole === 'owner' ? handleRemoveMember : null}
           onError={(message) => notify(message, 3000, 'error')}
           boardName={boardData?.name}
+          repo={boardData?.repo}
         />
       )}
     </div>

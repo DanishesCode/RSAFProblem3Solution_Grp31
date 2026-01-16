@@ -37,6 +37,13 @@
     color: #222;
   }
   
+  .mm-repo-text {
+    font-size: 13px;
+    color: #666;
+    margin-top: 6px;
+    font-weight: 400;
+  }
+  
   .mm-back {
     border: none;
     background: transparent;
