@@ -1,9 +1,18 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./SelectionPage.css";
 
 export default function SelectionPage() {
   const navigate = useNavigate();
+
+  // Check authentication - redirect to login if no githubId
+  useEffect(() => {
+    const githubId = localStorage.getItem("githubId");
+    if (!githubId) {
+      console.log("[SelectionPage] No githubId found, redirecting to login");
+      navigate("/login", { replace: true });
+    }
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("githubId");
