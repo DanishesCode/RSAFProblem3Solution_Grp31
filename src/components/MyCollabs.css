@@ -1,0 +1,228 @@
+/* src/pages/MyCollabs.css */
+html, body {
+    height: 100%;
+    margin: 0;
+  }
+  
+  .mc-page {
+    height: 100vh;
+    background: #fff;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color: #111;
+    padding: 22px 28px 28px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* ===== TOP BAR ===== */
+  .mc-topbar {
+    background: #efe9e3;
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 160px 1fr 160px;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .mc-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-weight: 700;
+  }
+  
+  .mc-back:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+  
+  .mc-back-icon {
+    font-size: 26px;
+    line-height: 1;
+    margin-top: -2px;
+  }
+  
+  .mc-title {
+    margin: 0;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 800;
+  }
+  
+  .mc-rule {
+    margin: 14px 0 18px;
+    height: 1px;
+    background: #4a4a4a;
+    opacity: 0.55;
+  }
+  
+  /* ===== SEARCH ===== */
+  .mc-search-wrap {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  
+  .mc-search {
+    width: min(620px, 92vw);
+    height: 42px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1.5px solid #6e6e6e;
+    outline: none;
+    font-size: 14px;
+  }
+  
+  .mc-search:focus {
+    border-color: #2f6fed;
+    box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.18);
+  }
+  
+  .mc-collabid {
+    font-size: 14px;
+  }
+  
+  /* =========================================================
+     ✅ SCROLL BOX: show exactly 2 rows x 2 cols = 4 cards
+     - mc-scrollbox has fixed height = (2 card heights + gap)
+     - overflow-y: auto enables scrolling for card #5+
+     ========================================================= */
+  .mc-scrollbox {
+    width: min(1180px, 100%);
+    margin: 0 auto;
+  
+    /* card height 140px, row gap 26px => 140 + 26 + 140 = 306px */
+    height: 306px;              /* ✅ shows exactly 2 rows */
+    overflow-y: auto;           /* ✅ scroll for the rest */
+    overflow-x: hidden;
+  
+    padding: 4px 2px;
+  }
+  
+  /* scrollbar optional */
+  .mc-scrollbox::-webkit-scrollbar {
+    width: 10px;
+  }
+  .mc-scrollbox::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 999px;
+  }
+  .mc-scrollbox::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 999px;
+  }
+  
+  /* ===== GRID ===== */
+  .mc-grid {
+    width: 100%;
+    max-width: 1040px;            /* keeps cards centered */
+  
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);  /* 2 per row */
+    column-gap: 56px;
+    row-gap: 26px;
+  
+    align-content: start;
+    justify-items: stretch;       /* cards stretch evenly */
+  }
+  
+  
+  /* ===== CARD ===== */
+  .mc-card {
+    height: 140px;
+    border: 1.5px solid #6e6e6e;
+    border-radius: 10px;
+    background: #eee7df;
+  
+    padding: 18px 22px;
+    text-align: left;
+  
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+  }
+  
+  .mc-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.12);
+  }
+  
+  .mc-card-title {
+    font-weight: 900;
+    margin-bottom: 8px;
+    font-size: 26px;
+  }
+  
+  .mc-card-sub {
+    font-size: 14px;
+    margin: 2px 0;
+  }
+  
+  .mc-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 18px 0;
+    opacity: 0.7;
+  }
+  
+  /* ===== CREATE BUTTON ===== */
+  .mc-create {
+    position: fixed;
+    right: 54px;
+    bottom: 44px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 10px;
+    background: #2f6fed;
+    color: #fff;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+  }
+  
+  .mc-create:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.18);
+  }
+  
+  .mc-create:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+  
+  /* mobile: 1 per row and still scroll */
+  @media (max-width: 900px) {
+    .mc-grid {
+      grid-template-columns: 1fr;
+      column-gap: 0;
+    }
+  
+    /* now 2 visible cards (since 1 col) */
+    .mc-scrollbox {
+        width: min(1180px, 100%);
+        margin: 0 auto;               /* ✅ CENTER IT */
+      
+        height: 306px;                /* 2 rows visible */
+        overflow-y: auto;
+        overflow-x: hidden;
+      
+        padding: 4px 2px;
+      
+        display: flex;                /* ✅ center grid inside */
+        justify-content: center;
+      }
+      
+    .mc-title {
+      text-align: left;
+    }
+  
+    .mc-topbar {
+      grid-template-columns: 160px 1fr;
+    }
+  }
+  

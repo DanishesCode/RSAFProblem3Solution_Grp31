@@ -229,10 +229,8 @@ export default function MyBoards() {
                   }}
                 >
                   <div className="myb-card-title">{b.title}</div>
-                  <div className="myb-card-sub">{b.repo}</div>
-                  <div className="myb-card-sub">
-                    {b.type === "personal" ? "Personal" : `${b.members} members`}
-                  </div>
+                  <div className="myb-card-sub">Repo: {b.repo}</div>
+                 
                 </button>
               ))}
 

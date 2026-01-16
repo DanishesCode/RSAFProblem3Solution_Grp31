@@ -99,7 +99,22 @@ export default function CreateBoardModal({
           placeholder=""
         />
 
-       
+        {/* Initial team */}
+        <label className="cbm-label">Initial Team</label>
+        <div className="cbm-invite-row">
+          <input
+            className="cbm-input"
+            value={inviteInput}
+            onChange={(e) => setInviteInput(e.target.value)}
+            placeholder="Add people by name or email..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter") addInvite();
+            }}
+          />
+          <button className="cbm-invite-btn" type="button" onClick={addInvite}>
+            Invite
+          </button>
+        </div>
 
         {/* chips */}
         {team.length > 0 && (
