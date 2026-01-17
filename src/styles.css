@@ -876,8 +876,8 @@ main {
 /* -- Filter panel polish -- */
 .filter-panel {
   position: absolute;
-  right: 245px;
-  top: 64px;
+  right: 310px;
+  top: 70px;
   width: 320px;
   background: #fff;
   border-radius: 12px;
@@ -918,7 +918,7 @@ main {
   gap:8px;
   padding:6px 2px;
 }
-.filter-section-title { font-size:13px; color:#555; margin-bottom:4px; }
+.filter-section-title { font-size:13px; color:#333; margin-bottom:4px; font-weight:700; }
 
 /* checkbox list area */
 #filter-repos, #filter-agents {
@@ -935,6 +935,31 @@ main {
   gap:8px;
   font-size:13px;
   color:#333;
+}
+
+/* Clickable filter words (agent/owner/priority) */
+.filter-word {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: transparent;
+  color: #333;
+  font-size: 13px;
+  margin-bottom: 6px;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.06s ease;
+}
+.filter-word:hover {
+  background: #faf5ee;
+  transform: translateY(-1px);
+}
+.filter-word.selected {
+  background: #f5ead0; /* soft beige for selected */
+  color: #1b1b1b; /* high contrast text */
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.filter-word:focus {
+  outline: 2px solid #c9b59c;
+  outline-offset: 2px;
 }
 
 /* Clear button aligned to right */

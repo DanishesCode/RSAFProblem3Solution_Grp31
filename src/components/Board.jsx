@@ -34,7 +34,7 @@ function Board() {
   const [isActivityOpen, setIsActivityOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState({ repos: [], agents: [] });
+  const [filters, setFilters] = useState({ owners: [], agents: [], priorities: [] });
   const [activityLogs, setActivityLogs] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [inProgressTask, setInProgressTask] = useState(null);
@@ -516,14 +516,21 @@ function Board() {
       return false;
     }
     
-    // Repo filter
-    if (filters.repos.length > 0 && !filters.repos.includes(task.repo)) {
+    // Owner filter
+    if (filters.owners && filters.owners.length > 0) {
+      const ownerVal = task.ownerName || task.owner || (task.ownerId !== undefined && task.ownerId !== null ? String(task.ownerId) : "");
+      if (!filters.owners.includes(ownerVal)) return false;
+    }
+
+    // Agent filter
+    if (filters.agents && filters.agents.length > 0 && !filters.agents.includes(task.assignedAgent)) {
       return false;
     }
-    
-    // Agent filter
-    if (filters.agents.length > 0 && !filters.agents.includes(task.assignedAgent)) {
-      return false;
+
+    // Priority filter
+    if (filters.priorities && filters.priorities.length > 0) {
+      const p = (task.priority || "").toLowerCase();
+      if (!filters.priorities.includes(p)) return false;
     }
     
     return true;
