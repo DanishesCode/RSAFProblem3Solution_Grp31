@@ -11,6 +11,7 @@ import ActivitySidebar from './ActivitySidebar';
 import InProgressPanel from './InProgressPanel';
 import NotificationContainer from './NotificationContainer';
 import ManageMembersModal from './ManageMembersModal';
+import BoardChatWidget from './BoardChatWidget';
 import { initializeLogs, saveBacklog, updateBacklog, updateTaskStatus, deleteBacklog } from '../services/api';
 import { isValidTransition } from '../utils/taskTransitions';
 import { useAgentStreaming } from '../hooks/useAgentStreaming';
@@ -831,6 +832,11 @@ function Board() {
           boardName={boardData?.name}
           repo={boardData?.repo}
         />
+      )}
+
+      {/* Collab board ONLY: per-board chat widget */}
+      {boardData?.type === 'collab' && boardId && (
+        <BoardChatWidget boardId={boardId} boardName={boardData?.name} />
       )}
     </div>
   );
