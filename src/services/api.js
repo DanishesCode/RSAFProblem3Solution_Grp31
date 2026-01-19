@@ -435,3 +435,80 @@ export function getStaticAgents() {
     { id: AGENT_DOC_IDS.OpenAI, agentName: "OpenAI", agentSpecial: "ui-ux" },
   ];
 }
+
+// ---------------- BOARD CHAT (collab boards only) ----------------
+
+export async function listBoardMessages(boardId, userId, limit = 50) {
+  const url = `${API_BASE_URL}/boards/${encodeURIComponent(boardId)}/chat/messages?userId=${encodeURIComponent(
+    userId
+  )}&limit=${encodeURIComponent(limit)}`;
+
+  const res = await fetch(url, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Failed to list chat messages: ${res.status} ${text}`);
+  }
+
+  const json = await res.json();
+  return json.messages || [];
+}
+
+export async function sendBoardMessage(boardId, userId, text) {
+  const url = `${API_BASE_URL}/boards/${encodeURIComponent(boardId)}/chat/messages`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ boardId, userId, text }),
+  });
+
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(`Failed to send chat message: ${res.status} ${msg}`);
+  }
+
+  return await res.json();
+}
+
+export async function getBoardChatUnread(boardId, userId) {
+  const url = `${API_BASE_URL}/boards/${encodeURIComponent(boardId)}/chat/unread?userId=${encodeURIComponent(
+    userId
+  )}`;
+
+  const res = await fetch(url, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(`Failed to get chat unread: ${res.status} ${msg}`);
+  }
+
+  return await res.json();
+}
+
+export async function markBoardChatRead(boardId, userId) {
+  const url = `${API_BASE_URL}/boards/${encodeURIComponent(boardId)}/chat/read`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ boardId, userId }),
+  });
+
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(`Failed to mark chat read: ${res.status} ${msg}`);
+  }
+
+  return await res.json();
+}

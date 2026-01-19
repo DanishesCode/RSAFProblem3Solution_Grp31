@@ -12,6 +12,7 @@ const taskController = require("./controllers/taskController");
 const GeminiController = require('./controllers/geminiController');
 const OpenAIController = require('./controllers/openaiController');
 const boardController = require("./controllers/boardController");
+const chatController = require("./controllers/chatController");
 
 // Load env
 dotenv.config();
@@ -64,6 +65,12 @@ app.get("/boards/:boardId", boardController.getBoard);
 app.post("/boards/:boardId", boardController.updateBoard);
 app.delete("/boards/:boardId", boardController.deleteBoard);
 app.post("/boards/:boardId/members", boardController.addMembers);
+
+// Board chat (collab boards only)
+app.get("/boards/:boardId/chat/messages", chatController.listMessages);
+app.post("/boards/:boardId/chat/messages", chatController.sendMessage);
+app.get("/boards/:boardId/chat/unread", chatController.getUnread);
+app.post("/boards/:boardId/chat/read", chatController.markRead);
 
 // GitHub OAuth
 app.get("/github", githubController.githubRedirect);
