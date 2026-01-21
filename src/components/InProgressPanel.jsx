@@ -86,7 +86,7 @@ const InProgressPanel = ({ task, onClose, onUpdateProcessLog }) => {
           )}
 
           <div className="review-section">
-            <label>AI Thinking Process</label>
+            <label>AI Output</label>
             <div 
               className="code-info" 
               aria-live="polite"
@@ -98,7 +98,7 @@ const InProgressPanel = ({ task, onClose, onUpdateProcessLog }) => {
                 overflow: 'auto'
               }}
             >
-              {processText || 'No process log yet...'}
+              {processText || 'Processing your request...'}
             </div>
           </div>
         </div>

@@ -11,6 +11,7 @@ const githubController = require("./controllers/githubController");
 const taskController = require("./controllers/taskController");
 const GeminiController = require('./controllers/geminiController');
 const OpenAIController = require('./controllers/openaiController');
+const OpenRouterController = require('./controllers/openrouterController');
 const boardController = require("./controllers/boardController");
 const chatController = require("./controllers/chatController");
 
@@ -93,6 +94,10 @@ app.post("/ai/gemini/process-task", GeminiController.processTask);
 // OpenAI
 app.post("/ai/openai/generate", OpenAIController.generateResponse);
 app.post("/ai/openai/stream", OpenAIController.streamResponse);
+
+// OpenRouter (no streaming; one-shot only)
+app.post("/ai/openrouter/generate", OpenRouterController.generateResponse);
+app.post("/ai/openrouter/process-task", OpenRouterController.processTask);
 
 // ----------------------------------------------------
 // (D) VITE MIDDLEWARE (DEV) - BEFORE static
