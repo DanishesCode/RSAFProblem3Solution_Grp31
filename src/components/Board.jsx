@@ -86,7 +86,7 @@ function Board() {
           ...taskToUpdate,
           ...updates,
           userId: userId,
-          ownerId: userId,
+          ownerId: taskToUpdate.ownerId,
           taskid: taskId,
           // Ensure we have all required fields
           title: updates.title || taskToUpdate.title,
@@ -248,8 +248,16 @@ function Board() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, boardId]); // Run when authentication status or boardId changes
 
-  // Handle AI agent streaming - only when authenticated
-  // Temporarily disable to prevent refresh loops - will re-enable after fixing
+  // Keep in-progress modal task in sync with latest task state (for streaming updates)
+  useEffect(() => {
+    if (!inProgressTask) return;
+    const updated = tasks.find(t => t.taskid === inProgressTask.taskid);
+    if (updated && updated !== inProgressTask) {
+      setInProgressTask(updated);
+    }
+  }, [tasks, inProgressTask]);
+
+  // AI agent streaming disabled – we use one-shot OpenRouter calls instead
   // useAgentStreaming(isAuthenticated ? tasks : [], handleUpdateTask);
 
   // Add notification
@@ -306,13 +314,14 @@ function Board() {
     }
   };
 
-  // Call Gemini API to generate output for a task (via backend)
-  const callGeminiAPI = async (task) => {
+  // Call OpenRouter (DeepSeek via OpenRouter) to generate output for a task (via backend)
+  // This is used for ALL agents (Claude, Gemini, OpenAI) so they share the same backend brain.
+  const callOpenRouterAPI = async (task) => {
     try {
       notify(`Processing task with ${task.assignedAgent || 'AI'}...`, 2000, 'success');
 
       // Call backend endpoint that handles everything
-      const response = await fetch('http://localhost:3000/ai/gemini/process-task', {
+      const response = await fetch('http://localhost:3000/ai/openrouter/process-task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -323,7 +332,7 @@ function Board() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || `Gemini API error: ${response.status}`);
+        throw new Error(errorData.error || `OpenRouter API error: ${response.status}`);
       }
 
       const data = await response.json();
@@ -338,8 +347,8 @@ function Board() {
 
       notify('AI processing complete!', 2000, 'success');
       return agentOutput;
-    } catch (error) {
-      console.error('Error calling Gemini API:', error);
+      } catch (error) {
+      console.error('Error calling OpenRouter API:', error);
       notify(`Failed to process task with AI: ${error.message}`, 3000, 'error');
       throw error;
     }
@@ -417,32 +426,34 @@ function Board() {
       setTasks(updatedTasks);
       updateAgentWorkload(updatedTasks);
       
-      // When task moves to "progress", call Gemini API and auto-move to review
+          // When task moves to "progress", call OpenRouter API and auto-move to review
       if (toStatus === 'progress' && task) {
         try {
-          // Call Gemini API (works for all agents - Gemini, Claude, OpenAI)
-          await callGeminiAPI(task);
+          // Call OpenRouter API (works for all agents - Claude, Gemini, OpenAI)
+          await callOpenRouterAPI(task);
           
           // Automatically move to review after AI processing
           setTimeout(async () => {
             await updateTaskStatus(taskId, 'review');
-            const reviewTasks = updatedTasks.map(t => {
-              if (t.taskid === taskId) {
-                const updated = { ...t, status: 'review', progress: 100 };
-                pushActivity({
-                  title: updated.title,
-                  agent: updated.assignedAgent,
-                  status: 'In Review',
-                  priority: updated.priority,
-                  repo: updated.repo,
-                  percent: 100
-                });
-                return updated;
-              }
-              return t;
+            setTasks(prev => {
+              const reviewTasks = prev.map(t => {
+                if (t.taskid === taskId) {
+                  const updated = { ...t, status: 'review', progress: 100 };
+                  pushActivity({
+                    title: updated.title,
+                    agent: updated.assignedAgent,
+                    status: 'In Review',
+                    priority: updated.priority,
+                    repo: updated.repo,
+                    percent: 100
+                  });
+                  return updated;
+                }
+                return t;
+              });
+              updateAgentWorkload(reviewTasks);
+              return reviewTasks;
             });
-            setTasks(reviewTasks);
-            updateAgentWorkload(reviewTasks);
             notify('Task moved to review', 2000, 'success');
           }, 1000); // Small delay to ensure output is saved
         } catch (error) {

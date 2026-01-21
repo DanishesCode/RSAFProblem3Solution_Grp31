@@ -1099,6 +1099,14 @@ main {
   min-height: 40px;
 }
 
+/* Make AI output look like real code blocks */
+.code-info {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  max-height: 320px;
+}
+
 .repo-link {
   display: flex;
   align-items: center;

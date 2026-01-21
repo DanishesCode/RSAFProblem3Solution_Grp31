@@ -115,8 +115,16 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]); // Only run when authentication status changes
 
-  // Handle AI agent streaming - only when authenticated
-  // Temporarily disable to prevent refresh loops - will re-enable after fixing
+  // Keep in-progress modal task in sync with latest task state (for streaming updates)
+  useEffect(() => {
+    if (!inProgressTask) return;
+    const updated = tasks.find((t) => t.taskid === inProgressTask.taskid);
+    if (updated && updated !== inProgressTask) {
+      setInProgressTask(updated);
+    }
+  }, [tasks, inProgressTask]);
+
+  // AI agent streaming disabled – we use one-shot OpenRouter calls instead
   // useAgentStreaming(isAuthenticated ? tasks : [], handleUpdateTask);
 
   // Add notification
