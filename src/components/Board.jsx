@@ -12,7 +12,7 @@ import InProgressPanel from './InProgressPanel';
 import NotificationContainer from './NotificationContainer';
 import ManageMembersModal from './ManageMembersModal';
 import BoardChatWidget from './BoardChatWidget';
-import { initializeLogs, saveBacklog, updateBacklog, updateTaskStatus, deleteBacklog } from '../services/api';
+import { initializeLogs, saveBacklog, updateBacklog, updateTaskStatus, deleteBacklog, pushCodeToGitHub } from '../services/api';
 import { isValidTransition } from '../utils/taskTransitions';
 import { useAgentStreaming } from '../hooks/useAgentStreaming';
 import '../styles.css';
@@ -442,6 +442,73 @@ function Board() {
       
       setTasks(updatedTasks);
       updateAgentWorkload(updatedTasks);
+      
+      // When task moves to "done", automatically push code to GitHub
+      if (toStatus === 'done') {
+        const latestTask = updatedTasks.find(t => t.taskid === taskId);
+        if (latestTask && latestTask.agentOutput && latestTask.repo) {
+          try {
+            // Get owner's GitHub username
+            const ownerResponse = await fetch(`http://localhost:3000/users/github/${latestTask.ownerId}`, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+            });
+
+            if (ownerResponse.ok) {
+              const ownerData = await ownerResponse.json();
+              const owner = ownerData.githubName || latestTask.ownerId;
+              const repo = latestTask.repo;
+              
+              // Create branch name from task title and ID (sanitized)
+              // Sanitize task title: remove special chars, replace spaces with hyphens, limit length
+              const sanitizedTitle = (latestTask.title || 'task')
+                .toLowerCase()
+                .replace(/[^a-z0-9\s-]/gi, '') // Remove special characters
+                .replace(/\s+/g, '-') // Replace spaces with hyphens
+                .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+                .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+                .substring(0, 50); // Limit to 50 characters
+              
+              const branchName = `${sanitizedTitle}-${taskId}`.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+              
+              // Parse code output to extract file path or use default
+              let filePath = 'generated-code.js';
+              let codeContent = latestTask.agentOutput;
+              
+              // Try to extract file path from code comments (e.g., "// file: src/index.js")
+              const filePathMatch = codeContent.match(/\/\/\s*file:\s*([^\n]+)/i) || 
+                                   codeContent.match(/\/\/\s*path:\s*([^\n]+)/i);
+              if (filePathMatch && filePathMatch[1]) {
+                filePath = filePathMatch[1].trim();
+                // Remove the file path comment from content
+                codeContent = codeContent.replace(/\/\/\s*file:\s*[^\n]+\n?/gi, '').replace(/\/\/\s*path:\s*[^\n]+\n?/gi, '');
+              }
+              
+              // Push code to GitHub
+              const pushResult = await pushCodeToGitHub({
+                githubId: latestTask.ownerId,
+                owner: owner,
+                repo: repo,
+                filePath: filePath,
+                content: codeContent.trim(),
+                message: `Auto-generated code for task: ${latestTask.title}`,
+                branch: branchName,
+                createNewBranch: true
+              });
+
+              notify(`Code pushed to GitHub branch: ${branchName}`, 3000, 'success');
+              console.log('Code pushed successfully:', pushResult);
+            } else {
+              console.warn('Could not fetch owner GitHub username, skipping push');
+            }
+          } catch (error) {
+            console.error('Error pushing code to GitHub:', error);
+            notify(`Failed to push code to GitHub: ${error.message}`, 3000, 'error');
+            // Don't block the task from moving to done if push fails
+          }
+        }
+      }
       
           // When task moves to "progress", call OpenRouter API and auto-move to review
       if (toStatus === 'progress') {
