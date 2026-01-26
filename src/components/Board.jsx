@@ -825,6 +825,7 @@ function Board() {
         <CreateTaskModal
           task={editingTask}
           repos={repos}
+          boardRepo={boardData?.repo}
           onClose={() => {
             setIsCreateModalOpen(false);
             setEditingTask(null);
