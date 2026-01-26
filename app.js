@@ -77,6 +77,7 @@ app.post("/boards/:boardId/chat/read", chatController.markRead);
 app.get("/github", githubController.githubRedirect);
 app.get("/github/callback", githubController.githubCallback);
 app.get("/users/github/:githubId", githubController.getUserByGithubId);
+app.post("/github/push-code", githubController.pushCodeToGitHub);
 
 // Backlogs
 app.get("/backlog/getUserLogs", taskController.getBacklogsByUser);
