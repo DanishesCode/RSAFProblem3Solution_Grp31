@@ -198,25 +198,25 @@ const Dashboard = () => {
           <div className="filter-section">
             <h3>Ai Agent</h3>
             <button
-              value="Claude"
-              className={selectedFilters.aiAgent.has('Claude') ? 'selected' : ''}
-              onClick={() => handleFilterToggle('aiAgent', 'Claude')}
+              value="DeepSeek"
+              className={selectedFilters.aiAgent.has('DeepSeek') ? 'selected' : ''}
+              onClick={() => handleFilterToggle('aiAgent', 'DeepSeek')}
             >
-              Claude Ai
+              DeepSeek Ai
             </button>
             <button
-              value="OpenAI"
-              className={selectedFilters.aiAgent.has('OpenAI') ? 'selected' : ''}
-              onClick={() => handleFilterToggle('aiAgent', 'OpenAI')}
+              value="GPT_OSS"
+              className={selectedFilters.aiAgent.has('GPT_OSS') ? 'selected' : ''}
+              onClick={() => handleFilterToggle('aiAgent', 'GPT_OSS')}
             >
-              OpenAi
+              GPT_OSS Ai
             </button>
             <button
-              value="Gemini"
-              className={selectedFilters.aiAgent.has('Gemini') ? 'selected' : ''}
-              onClick={() => handleFilterToggle('aiAgent', 'Gemini')}
+              value="Gemma"
+              className={selectedFilters.aiAgent.has('Gemma') ? 'selected' : ''}
+              onClick={() => handleFilterToggle('aiAgent', 'Gemma')}
             >
-              Gemini Ai
+              Gemma Ai
             </button>
           </div>
 

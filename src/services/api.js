@@ -8,6 +8,10 @@ const API_BASE_URL = "";
  * Firestore agent document IDs (from your screenshots)
  */
 export const AGENT_DOC_IDS = {
+  DeepSeek: "PGqJh4Sr5mrFTFkRKAut",  // Previously Claude
+  Gemma: "sSmp10vRDvPWvFooKv1t",      // Previously Gemini
+  GPT_OSS: "sowDLFwSa5K1ZdyUrgs7",    // Previously OpenAI
+  // Keep old keys for backward compatibility with existing Firestore data
   Claude: "PGqJh4Sr5mrFTFkRKAut",
   Gemini: "sSmp10vRDvPWvFooKv1t",
   OpenAI: "sowDLFwSa5K1ZdyUrgs7",
@@ -18,16 +22,22 @@ export const AGENT_DOC_IDS = {
  */
 const AGENT_ALIASES = {
   // numeric / legacy IDs
-  "1": AGENT_DOC_IDS.Claude,
-  "2": AGENT_DOC_IDS.Gemini,
-  "3": AGENT_DOC_IDS.OpenAI,
+  "1": AGENT_DOC_IDS.DeepSeek,
+  "2": AGENT_DOC_IDS.Gemma,
+  "3": AGENT_DOC_IDS.GPT_OSS,
 
-  // names (various casing)
-  "claude": AGENT_DOC_IDS.Claude,
-  "gemini": AGENT_DOC_IDS.Gemini,
-  "openai": AGENT_DOC_IDS.OpenAI,
-  "openAi": AGENT_DOC_IDS.OpenAI,
-  "openAI": AGENT_DOC_IDS.OpenAI,
+  // new names (various casing)
+  "deepseek": AGENT_DOC_IDS.DeepSeek,
+  "gemma": AGENT_DOC_IDS.Gemma,
+  "gpt_oss": AGENT_DOC_IDS.GPT_OSS,
+  "gptoss": AGENT_DOC_IDS.GPT_OSS,
+  
+  // old names (backward compatibility)
+  "claude": AGENT_DOC_IDS.DeepSeek,
+  "gemini": AGENT_DOC_IDS.Gemma,
+  "openai": AGENT_DOC_IDS.GPT_OSS,
+  "openAi": AGENT_DOC_IDS.GPT_OSS,
+  "openAI": AGENT_DOC_IDS.GPT_OSS,
 };
 
 /**
@@ -44,7 +54,8 @@ function looksLikeFirestoreId(value) {
  * Convert ANY incoming agent representation into a Firestore agent doc id.
  * Supports:
  * - 1/2/3
- * - "Claude"/"Gemini"/"OpenAI"
+ * - "DeepSeek"/"Gemma"/"GPT_OSS" (new names)
+ * - "Claude"/"Gemini"/"OpenAI" (old names for backward compatibility)
  * - already doc id
  */
 function normalizeAgentId(agentId, assignedAgent) {
@@ -192,7 +203,7 @@ export async function initializeLogs(userId, boardId = null) {
  * POST /backlog/save
  * You can pass either:
  * - agentId: 1/2/3  (legacy)
- * - assignedAgent: "Gemini" (legacy)
+ * - assignedAgent: "Gemma" (or legacy "Gemini")
  * - agentId: "sSmp10vRDvPWvFooKv1t" (Firestore doc id)
  *
  * This function will convert to the Firestore doc id automatically.
@@ -430,9 +441,9 @@ export async function deleteBacklog(taskId) {
  */
 export function getStaticAgents() {
   return [
-    { id: AGENT_DOC_IDS.Claude, agentName: "Claude", agentSpecial: "backend" },
-    { id: AGENT_DOC_IDS.Gemini, agentName: "Gemini", agentSpecial: "frontend" },
-    { id: AGENT_DOC_IDS.OpenAI, agentName: "OpenAI", agentSpecial: "ui-ux" },
+    { id: AGENT_DOC_IDS.DeepSeek, agentName: "DeepSeek", agentSpecial: "frontend" },
+    { id: AGENT_DOC_IDS.Gemma, agentName: "Gemma", agentSpecial: "backend" },
+    { id: AGENT_DOC_IDS.GPT_OSS, agentName: "GPT_OSS", agentSpecial: "ui-ux" },
   ];
 }
 

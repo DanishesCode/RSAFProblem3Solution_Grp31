@@ -4,16 +4,16 @@ const taskModel = require("../models/taskModel");
 class OpenRouterController {
   /**
    * Simple non-streaming completion endpoint
-   * Body: { userPrompt: string, prePrompt?: string }
+   * Body: { userPrompt: string, prePrompt?: string, agentIdentifier?: string|number }
    */
   static async generateResponse(req, res) {
-    const { userPrompt, prePrompt } = req.body || {};
+    const { userPrompt, prePrompt, agentIdentifier } = req.body || {};
     if (!userPrompt) {
       return res.status(400).json({ error: "userPrompt is required" });
     }
 
     try {
-      const aiResponse = await sendOpenRouterPrompt(userPrompt, prePrompt);
+      const aiResponse = await sendOpenRouterPrompt(userPrompt, prePrompt, agentIdentifier);
       res.json({ response: aiResponse });
     } catch (error) {
       console.error("OpenRouter generateResponse error:", error);
@@ -25,7 +25,7 @@ class OpenRouterController {
    * Process a task by ID:
    *  - Load task from Firestore
    *  - Build prompt from task.prompt + requirement
-   *  - Call OpenRouter (DeepSeek) to generate output
+   *  - Call OpenRouter with the appropriate model based on the task's assigned agent
    *  - Save agentOutput back to Firestore
    */
   static async processTask(req, res) {
@@ -63,8 +63,11 @@ class OpenRouterController {
         "4) Prefer complete, ready-to-paste files or functions.\n" +
         "5) Never invent requirements beyond what is in the prompt + requirements.\n";
 
-      // Call OpenRouter (DeepSeek) once with the full prompt
-      const agentOutput = await sendOpenRouterPrompt(fullPrompt, prePrompt);
+      // Determine which model to use based on the task's assigned agent
+      const agentIdentifier = task.assignedAgent || task.agentId || task.agentid;
+      
+      // Call OpenRouter with the appropriate model for this agent
+      const agentOutput = await sendOpenRouterPrompt(fullPrompt, prePrompt, agentIdentifier);
 
       // Save output to database using existing helper
       await taskModel.updateTaskAgentOutput(taskId, agentOutput);
@@ -80,7 +83,7 @@ class OpenRouterController {
         .status(500)
         .json({
           error:
-            error.message || "Failed to process task with OpenRouter (DeepSeek)",
+            error.message || "Failed to process task with OpenRouter",
         });
     }
   }

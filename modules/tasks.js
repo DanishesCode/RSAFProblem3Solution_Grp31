@@ -14,9 +14,9 @@ import { pushActivity } from "./activity.js";
 ======================================================= */
 export function mapAgentIdToName(id) {
     switch (String(id)) {
-        case "1": return "Claude";
-        case "2": return "Gemini";
-        case "3": return "OpenAI";
+        case "1": return "DeepSeek";
+        case "2": return "Gemma";
+        case "3": return "GPT_OSS";
         default: return "Unknown";
     }
 }

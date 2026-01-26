@@ -17,9 +17,9 @@ const CreateTaskModal = ({ task, repos, onClose, onCreate, onUpdate, notify }) =
   ];
 
   const agents = [
-    { id: 1, name: 'Claude', filter: 'backend' },
-    { id: 2, name: 'Gemini', filter: 'frontend' },
-    { id: 3, name: 'OpenAI', filter: 'ui-ux' }
+    { id: 1, name: 'DeepSeek', filter: 'frontend' },
+    { id: 2, name: 'Gemma', filter: 'backend' },
+    { id: 3, name: 'GPT_OSS', filter: 'ui-ux' }
   ];
 
   useEffect(() => {
