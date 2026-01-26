@@ -88,21 +88,29 @@ function Board() {
           userId: userId,
           ownerId: taskToUpdate.ownerId,
           taskid: taskId,
-          // Ensure we have all required fields
-          title: updates.title || taskToUpdate.title,
-          prompt: updates.prompt || taskToUpdate.prompt || '',
-          assignedAgent: updates.assignedAgent || taskToUpdate.assignedAgent,
-          agentId: updates.agentId || taskToUpdate.agentId,
-          requirements: updates.requirements || taskToUpdate.requirements || [],
-          status: updates.status || taskToUpdate.status || 'toDo',
+          // Ensure we have all required fields - use updates if provided, otherwise fall back to existing
+          title: updates.title !== undefined ? updates.title : taskToUpdate.title,
+          prompt: updates.prompt !== undefined ? updates.prompt : taskToUpdate.prompt || '',
+          description: updates.description !== undefined ? updates.description : taskToUpdate.description || '',
+          assignedAgent: updates.assignedAgent !== undefined ? updates.assignedAgent : taskToUpdate.assignedAgent,
+          agentId: updates.agentId !== undefined ? updates.agentId : taskToUpdate.agentId,
+          requirements: updates.requirements !== undefined ? updates.requirements : taskToUpdate.requirements || [],
+          status: updates.status !== undefined ? updates.status : taskToUpdate.status || 'toDo',
         };
         
         // Update in backend (not create)
         const saved = await updateBacklog(updatedTaskData);
         
-        // Update local state
+        // Update local state - merge saved response with updates to ensure all fields are current
         setTasks(prev => prev.map(task => 
-          task.taskid === taskId ? { ...task, ...updates, ...saved } : task
+          task.taskid === taskId ? { 
+            ...task, 
+            ...saved,
+            // Explicitly preserve prompt and description from updates if they were provided
+            ...(updates.prompt !== undefined && { prompt: updates.prompt }),
+            ...(updates.description !== undefined && { description: updates.description }),
+            ...updates // Apply any remaining updates on top to ensure they're not lost
+          } : task
         ));
       } else {
         // Fallback: just update local state if task not found
@@ -256,6 +264,15 @@ function Board() {
       setInProgressTask(updated);
     }
   }, [tasks, inProgressTask]);
+
+  // Keep selectedTask (for ReviewModal, DoneModal, CancelledModal) in sync with latest task state
+  useEffect(() => {
+    if (!selectedTask) return;
+    const updated = tasks.find(t => t.taskid === selectedTask.taskid);
+    if (updated && updated !== selectedTask) {
+      setSelectedTask(updated);
+    }
+  }, [tasks, selectedTask]);
 
   // AI agent streaming disabled – we use one-shot OpenRouter calls instead
   // useAgentStreaming(isAuthenticated ? tasks : [], handleUpdateTask);
@@ -427,10 +444,13 @@ function Board() {
       updateAgentWorkload(updatedTasks);
       
           // When task moves to "progress", call OpenRouter API and auto-move to review
-      if (toStatus === 'progress' && task) {
-        try {
-          // Call OpenRouter API (works for all agents - DeepSeek, Gemma, GPT_OSS)
-          await callOpenRouterAPI(task);
+      if (toStatus === 'progress') {
+        // Use the updated task from updatedTasks to ensure we have the latest data (important for reprompt)
+        const latestTask = updatedTasks.find(t => t.taskid === taskId);
+        if (latestTask) {
+          try {
+            // Call OpenRouter API (works for all agents - DeepSeek, Gemma, GPT_OSS)
+            await callOpenRouterAPI(latestTask);
           
           // Automatically move to review after AI processing
           setTimeout(async () => {
@@ -456,9 +476,10 @@ function Board() {
             });
             notify('Task moved to review', 2000, 'success');
           }, 1000); // Small delay to ensure output is saved
-        } catch (error) {
-          console.error('Error processing task with AI:', error);
-          // Task stays in progress even if AI fails
+          } catch (error) {
+            console.error('Error processing task with AI:', error);
+            // Task stays in progress even if AI fails
+          }
         }
       }
       
