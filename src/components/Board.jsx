@@ -24,9 +24,9 @@ function Board() {
   const boardId = boardIdFromParams || localStorage.getItem('selectedBoardId');
   const [tasks, setTasks] = useState([]);
   const [agents, setAgents] = useState([
-    { id: 1, name: 'Claude', status: 'working', workload: 0, logo: '/img/claude.png' },
-    { id: 2, name: 'Gemini', status: 'offline', workload: 0, logo: '/img/gemini.png' },
-    { id: 3, name: 'OpenAI', status: 'working', workload: 0, logo: '/img/openai.png' }
+    { id: 1, name: 'DeepSeek', status: 'working', workload: 0, logo: '/img/deepseekLogo.png' },
+    { id: 2, name: 'Gemma', status: 'offline', workload: 0, logo: '/img/gemmaLogo.png' },
+    { id: 3, name: 'GPT_OSS', status: 'working', workload: 0, logo: '/img/openai.png' }
   ]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -136,9 +136,9 @@ function Board() {
           } else if (agentName) {
             // Also match by name for cases where agentId might not be set
             const agentNameLower = agentName.toLowerCase();
-            if (agentNameLower === 'claude') agentWork[1] += 20;
-            else if (agentNameLower === 'gemini') agentWork[2] += 20;
-            else if (agentNameLower === 'openai') agentWork[3] += 20;
+            if (agentNameLower === 'deepseek') agentWork[1] += 20;
+            else if (agentNameLower === 'gemma') agentWork[2] += 20;
+            else if (agentNameLower === 'gpt_oss') agentWork[3] += 20;
           }
         });
     }
@@ -314,8 +314,8 @@ function Board() {
     }
   };
 
-  // Call OpenRouter (DeepSeek via OpenRouter) to generate output for a task (via backend)
-  // This is used for ALL agents (Claude, Gemini, OpenAI) so they share the same backend brain.
+  // Call OpenRouter to generate output for a task (via backend)
+  // This is used for ALL agents (DeepSeek, Gemma, GPT_OSS) so they share the same backend brain.
   const callOpenRouterAPI = async (task) => {
     try {
       notify(`Processing task with ${task.assignedAgent || 'AI'}...`, 2000, 'success');
@@ -429,7 +429,7 @@ function Board() {
           // When task moves to "progress", call OpenRouter API and auto-move to review
       if (toStatus === 'progress' && task) {
         try {
-          // Call OpenRouter API (works for all agents - Claude, Gemini, OpenAI)
+          // Call OpenRouter API (works for all agents - DeepSeek, Gemma, GPT_OSS)
           await callOpenRouterAPI(task);
           
           // Automatically move to review after AI processing
@@ -551,9 +551,9 @@ function Board() {
   // Helper function
   const mapAgentIdToName = (id) => {
     switch (String(id)) {
-      case '1': return 'Claude';
-      case '2': return 'Gemini';
-      case '3': return 'OpenAI';
+      case '1': return 'DeepSeek';
+      case '2': return 'Gemma';
+      case '3': return 'GPT_OSS';
       default: return 'Unknown';
     }
   };

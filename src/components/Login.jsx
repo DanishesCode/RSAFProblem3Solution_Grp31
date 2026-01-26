@@ -27,7 +27,7 @@ export default function Login() {
 
           <ul className="featureList">
             <li>Auto-link tasks to GitHub repos</li>
-            <li>Track AI agent status (Claude / Gemini / OpenAI)</li>
+            <li>Track AI agent status (DeepSeek / Gemma / GPT_OSS)</li>
             <li>Clean dashboard UI with priority tags</li>
           </ul>
         </section>
