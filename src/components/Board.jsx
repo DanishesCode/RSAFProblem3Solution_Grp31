@@ -400,8 +400,10 @@ function Board() {
       taskData.ownerId = userId; // Also set ownerId explicitly
       const saved = await saveBacklog(taskData);
       if (saved) {
+        // IMPORTANT: never generate a fallback id here.
+        // If we do, the creator can get duplicates (local temp id + socket-created real id).
         const newTask = {
-          taskid: saved.taskid || `task-${Date.now()}`,
+          taskid: saved.taskid,
           title: saved.title,
           prompt: saved.prompt || '',
           priority: saved.priority || 'medium',
@@ -414,8 +416,17 @@ function Board() {
           requirements: saved.requirements || [],
           progress: 0
         };
-        setTasks(prev => [...prev, newTask]);
-        updateAgentWorkload([...tasks, newTask]);
+
+        // Upsert (prevents duplicates if the socket event arrives before/after this)
+        setTasks((prev) => {
+          const exists = prev.some((t) => String(t.taskid) === String(newTask.taskid));
+          const next = exists
+            ? prev.map((t) => (String(t.taskid) === String(newTask.taskid) ? { ...t, ...newTask } : t))
+            : [...prev, newTask];
+          updateAgentWorkload(next);
+          return next;
+        });
+
         pushActivity({
           title: newTask.title,
           agent: newTask.assignedAgent,

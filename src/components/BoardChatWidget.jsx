@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  getBoardChatUnread,
   listBoardMessages,
   markBoardChatRead,
   sendBoardMessage,
 } from "../services/api";
+import { getSocket } from "../services/socket";
 import "./BoardChatWidget.css";
 
 // Bottom-left chat popup for COLLAB boards only.
@@ -25,8 +25,6 @@ export default function BoardChatWidget({ boardId, boardName }) {
   const [error, setError] = useState(null);
 
   const listRef = useRef(null);
-  const pollTimerRef = useRef(null);
-  const unreadTimerRef = useRef(null);
 
   const title = boardName ? `${boardName} Chat` : "Board Chat";
 
@@ -36,38 +34,7 @@ export default function BoardChatWidget({ boardId, boardName }) {
     el.scrollTop = el.scrollHeight;
   };
 
-  // Poll unread indicator while closed
-  useEffect(() => {
-    if (!boardId || !userId) return;
-
-    // Clear any old timers
-    if (unreadTimerRef.current) {
-      clearInterval(unreadTimerRef.current);
-      unreadTimerRef.current = null;
-    }
-
-    // If open, we don't need unread polling (messages polling handles it)
-    if (open) return;
-
-    const tick = async () => {
-      try {
-        const r = await getBoardChatUnread(boardId, userId);
-        setHasUnread(!!r?.hasUnread);
-      } catch {
-        // ignore
-      }
-    };
-
-    tick();
-    unreadTimerRef.current = setInterval(tick, 5000);
-
-    return () => {
-      if (unreadTimerRef.current) clearInterval(unreadTimerRef.current);
-      unreadTimerRef.current = null;
-    };
-  }, [boardId, userId, open]);
-
-  // When open: load + poll messages
+  // When open: load messages
   useEffect(() => {
     if (!open) return;
     if (!boardId || !userId) return;
@@ -90,31 +57,48 @@ export default function BoardChatWidget({ boardId, boardName }) {
     };
 
     load();
-
-    // Poll new messages every 2s (simple + reliable)
-    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-    pollTimerRef.current = setInterval(async () => {
-      try {
-        const msgs = await listBoardMessages(boardId, userId, 75);
-        setMessages(msgs);
-      } catch {
-        // ignore
-      }
-    }, 2000);
-
-    return () => {
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-      pollTimerRef.current = null;
-    };
   }, [open, boardId, userId]);
 
-  // Cleanup timers on unmount
+  // Realtime: receive new messages via Socket.IO
   useEffect(() => {
-    return () => {
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-      if (unreadTimerRef.current) clearInterval(unreadTimerRef.current);
+    if (!boardId || !userId) return;
+
+    const socket = getSocket();
+    if (!socket.connected) socket.connect();
+
+    const onChatMessage = async ({ message }) => {
+      if (!message || !message.id) return;
+
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === message.id)) return prev;
+        return [...prev, message];
+      });
+
+      const mine = String(message.senderId) === String(userId);
+
+      if (!mine) {
+        if (!open) {
+          setHasUnread(true);
+        } else {
+          setHasUnread(false);
+          // Mark as read when open
+          try {
+            await markBoardChatRead(boardId, userId);
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      if (open) setTimeout(scrollToBottom, 0);
     };
-  }, []);
+
+    socket.on("chatMessage", onChatMessage);
+
+    return () => {
+      socket.off("chatMessage", onChatMessage);
+    };
+  }, [boardId, userId, open]);
 
   const onSend = async () => {
     const trimmed = text.trim();
