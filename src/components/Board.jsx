@@ -13,6 +13,7 @@ import NotificationContainer from './NotificationContainer';
 import ManageMembersModal from './ManageMembersModal';
 import BoardChatWidget from './BoardChatWidget';
 import { initializeLogs, saveBacklog, updateBacklog, updateTaskStatus, deleteBacklog, pushCodeToGitHub } from '../services/api';
+import { getSocket } from '../services/socket';
 import { isValidTransition } from '../utils/taskTransitions';
 import { useAgentStreaming } from '../hooks/useAgentStreaming';
 import '../styles.css';
@@ -255,6 +256,106 @@ function Board() {
     loadTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, boardId]); // Run when authentication status or boardId changes
+
+  // -----------------------------
+  // Realtime updates (COLLAB boards only)
+  // -----------------------------
+  useEffect(() => {
+    if (!isAuthenticated || !boardId) return;
+    if (boardData?.type !== "collab") return;
+
+    const socket = getSocket();
+    if (!socket.connected) socket.connect();
+
+    socket.emit("joinBoard", { boardId });
+
+    const normalizeIncomingTask = (t) => {
+      if (!t) return null;
+
+      // Backend uses taskId; frontend state uses taskid
+      const id = t.taskId || t.taskid;
+
+      // Backend uses `requirement` as comma-separated string
+      const requirements = typeof t.requirement === "string"
+        ? t.requirement.split(",").map(s => s.trim()).filter(Boolean)
+        : Array.isArray(t.requirements)
+          ? t.requirements
+          : [];
+
+      return {
+        taskid: id,
+        title: t.title || "",
+        prompt: t.prompt || "",
+        description: t.description || "",
+        priority: t.priority || "medium",
+        status: t.status || "toDo",
+        repo: t.repo || "",
+        ownerId: t.ownerId || "",
+        boardId: t.boardId || "",
+        agentName: t.agentName || "",
+        agentOutput: t.agentOutput || "",
+        assignedAgent: t.agentName || t.assignedAgent || "",
+        requirements,
+        progress: 0,
+        agentProcess: t.agentProcess,
+      };
+    };
+
+    const onTaskCreated = ({ task }) => {
+      const normalized = normalizeIncomingTask(task);
+      if (!normalized?.taskid) return;
+      setTasks((prev) => {
+        const exists = prev.some((x) => String(x.taskid) === String(normalized.taskid));
+        const next = exists
+          ? prev.map((x) => (String(x.taskid) === String(normalized.taskid) ? { ...x, ...normalized } : x))
+          : [normalized, ...prev];
+        updateAgentWorkload(next);
+        return next;
+      });
+    };
+
+    const onTaskUpdated = ({ task }) => {
+      const normalized = normalizeIncomingTask(task);
+      if (!normalized?.taskid) return;
+      setTasks((prev) => {
+        const next = prev.map((x) => (String(x.taskid) === String(normalized.taskid) ? { ...x, ...normalized } : x));
+        updateAgentWorkload(next);
+        return next;
+      });
+    };
+
+    const onTaskStatusUpdated = ({ task }) => {
+      const normalized = normalizeIncomingTask(task);
+      if (!normalized?.taskid) return;
+      setTasks((prev) => {
+        const next = prev.map((x) => (String(x.taskid) === String(normalized.taskid) ? { ...x, status: normalized.status } : x));
+        updateAgentWorkload(next);
+        return next;
+      });
+    };
+
+    const onTaskDeleted = ({ taskId }) => {
+      if (!taskId) return;
+      setTasks((prev) => {
+        const next = prev.filter((x) => String(x.taskid) !== String(taskId));
+        updateAgentWorkload(next);
+        return next;
+      });
+    };
+
+    socket.on("taskCreated", onTaskCreated);
+    socket.on("taskUpdated", onTaskUpdated);
+    socket.on("taskStatusUpdated", onTaskStatusUpdated);
+    socket.on("taskDeleted", onTaskDeleted);
+
+    return () => {
+      socket.off("taskCreated", onTaskCreated);
+      socket.off("taskUpdated", onTaskUpdated);
+      socket.off("taskStatusUpdated", onTaskStatusUpdated);
+      socket.off("taskDeleted", onTaskDeleted);
+      socket.emit("leaveBoard", { boardId });
+    };
+  }, [isAuthenticated, boardId, boardData?.type, updateAgentWorkload]);
 
   // Keep in-progress modal task in sync with latest task state (for streaming updates)
   useEffect(() => {
