@@ -4,6 +4,17 @@
 const BoardModel = require("../models/boardModel");
 const ChatModel = require("../models/chatModel");
 
+function emitToBoard(req, boardId, event, payload) {
+  try {
+    const io = req.io || req.app.get("io");
+    if (!io) return;
+    if (!boardId) return;
+    io.to(`board:${String(boardId)}`).emit(event, payload);
+  } catch (e) {
+    console.warn("Socket emit failed:", e?.message || e);
+  }
+}
+
 async function requireCollabMember(boardId, userId) {
   const board = await BoardModel.getBoard(boardId);
   if (!board) {
@@ -55,6 +66,9 @@ exports.sendMessage = async (req, res) => {
       senderId: String(userId),
       text: String(text).trim(),
     });
+
+    // Realtime: push to all members currently viewing this board
+    emitToBoard(req, boardId, "chatMessage", { message: msg });
 
     res.status(201).json(msg);
   } catch (err) {

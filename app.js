@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const path = require("path");
 const http = require("http");
+const { Server } = require("socket.io");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const passport = require("passport");
@@ -21,6 +22,9 @@ dotenv.config();
 // Initialize app
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Socket.IO instance will be attached after HTTP server is created
+app.set("io", null);
 
 // --- CORS (keep yours / adjust if needed) ---
 app.use(
@@ -43,6 +47,18 @@ app.use(
 
 app.use(express.json());
 app.use(cookieParser());
+
+// Make Socket.IO accessible in controllers via req.io
+app.use((req, _res, next) => {
+  req.io = req.app.get("io");
+  next();
+});
+
+// Make io available inside controllers via req.app.get('io')
+app.use((req, _res, next) => {
+  req.io = req.app.get("io");
+  next();
+});
 
 // ----------------------------------------------------
 // (A) BLOCK serving JSX directly EXCEPT /src/* (Vite dev)
@@ -184,6 +200,42 @@ async function startServer() {
   }
 
   const server = http.createServer(app);
+
+  // ---------------------------
+  // (F) SOCKET.IO (Realtime)
+  // ---------------------------
+  const io = new Server(server, {
+    cors: {
+      origin: [
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "http://localhost:5504",
+        "http://127.0.0.1:5504",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+      ],
+      credentials: true,
+      methods: ["GET", "POST"],
+    },
+  });
+
+  // attach to app so controllers can emit
+  app.set("io", io);
+
+  io.on("connection", (socket) => {
+    // Client joins a board room to receive realtime updates for that board
+    socket.on("joinBoard", ({ boardId } = {}) => {
+      if (!boardId) return;
+      socket.join(`board:${boardId}`);
+    });
+
+    socket.on("leaveBoard", ({ boardId } = {}) => {
+      if (!boardId) return;
+      socket.leave(`board:${boardId}`);
+    });
+  });
 
   server.listen(port, () => {
     console.log(`Server running on port ${port}`);
