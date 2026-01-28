@@ -2,7 +2,6 @@ const express = require('express');
 const dotenv = require('dotenv');
 const path = require("path");
 const http = require("http");
-const { Server } = require("socket.io");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const passport = require("passport");
@@ -22,9 +21,6 @@ dotenv.config();
 // Initialize app
 const app = express();
 const port = process.env.PORT || 3000;
-
-// Socket.IO instance will be attached after HTTP server is created
-app.set("io", null);
 
 // --- CORS (keep yours / adjust if needed) ---
 app.use(
@@ -47,18 +43,6 @@ app.use(
 
 app.use(express.json());
 app.use(cookieParser());
-
-// Make Socket.IO accessible in controllers via req.io
-app.use((req, _res, next) => {
-  req.io = req.app.get("io");
-  next();
-});
-
-// Make io available inside controllers via req.app.get('io')
-app.use((req, _res, next) => {
-  req.io = req.app.get("io");
-  next();
-});
 
 // ----------------------------------------------------
 // (A) BLOCK serving JSX directly EXCEPT /src/* (Vite dev)
@@ -155,14 +139,16 @@ async function startServer() {
 
     app.use(async (req, res, next) => {
       // Don't swallow API/login routes
-      if (
-        req.path.startsWith("/github") ||
-        req.path.startsWith("/backlog") ||
-        req.path.startsWith("/ai") ||
-        req.path.startsWith("/login")
-      ) {
-        return next();
-      }
+    if (
+     req.path.startsWith("/github") ||
+     req.path.startsWith("/backlog") ||
+     req.path.startsWith("/boards") ||
+     req.path.startsWith("/ai") ||
+     req.path.startsWith("/login")
+   ) {
+    return next();
+    }
+
 
       try {
         const vite = globalThis.vite;
@@ -201,9 +187,8 @@ async function startServer() {
 
   const server = http.createServer(app);
 
-  // ---------------------------
-  // (F) SOCKET.IO (Realtime)
-  // ---------------------------
+  // --- Socket.IO ---
+  const { Server } = require("socket.io");
   const io = new Server(server, {
     cors: {
       origin: [
@@ -217,21 +202,18 @@ async function startServer() {
         "http://127.0.0.1:5173",
       ],
       credentials: true,
-      methods: ["GET", "POST"],
     },
   });
 
-  // attach to app so controllers can emit
   app.set("io", io);
 
   io.on("connection", (socket) => {
-    // Client joins a board room to receive realtime updates for that board
-    socket.on("joinBoard", ({ boardId } = {}) => {
+    socket.on("joinBoard", (boardId) => {
       if (!boardId) return;
       socket.join(`board:${boardId}`);
     });
 
-    socket.on("leaveBoard", ({ boardId } = {}) => {
+    socket.on("leaveBoard", (boardId) => {
       if (!boardId) return;
       socket.leave(`board:${boardId}`);
     });
@@ -239,8 +221,6 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on port ${port}`);
-    console.log(`Login page: http://localhost:${port}/login`);
-    console.log(`Main app:    http://localhost:${port}/`);
   });
 }
 

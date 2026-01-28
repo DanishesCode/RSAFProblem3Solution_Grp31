@@ -11,7 +11,9 @@ export default function ManageMembersModal({
   onRemoveMember,
   onError,
   boardName = null,
-  repo = null
+  repo = null,
+  onDeleteBoard = null,
+  boardType = null, // 'personal' or 'collab'
 }) {
   const [inviteInput, setInviteInput] = useState("");
   const [isValidating, setIsValidating] = useState(false);
@@ -19,6 +21,7 @@ export default function ManageMembersModal({
 
   if (!isOpen) return null;
 
+  const isPersonalBoard = boardType === 'personal';
   const canRemove = userRole === 'owner';
   const canInvite = userRole === 'owner' || userRole === 'editor';
 
@@ -111,7 +114,7 @@ export default function ManageMembersModal({
         </div>
 
         <div className="mm-body">
-          {canInvite && (
+          {!isPersonalBoard && canInvite && (
             <div style={{ display: 'flex', gap: '8px' }}>
               <input
                 className="mm-invite"
@@ -147,7 +150,7 @@ export default function ManageMembersModal({
             </div>
           )}
           
-          {errorMessage && (
+          {!isPersonalBoard && errorMessage && (
             <div style={{ 
               color: '#d32f2f', 
               fontSize: '14px', 
@@ -160,40 +163,62 @@ export default function ManageMembersModal({
             </div>
           )}
 
-          <div className="mm-list">
-            <div className="mm-row mm-header-row">
-              <div className="mm-left">
-                <div className="mm-name mm-header-text">Name</div>
-              </div>
-              <div className="mm-role mm-header-text">Role</div>
-              <div style={{ width: '140px' }}></div>
-            </div>
-            {members.map((m) => (
-              <div className="mm-row" key={m.id}>
+          {!isPersonalBoard && (
+            <div className="mm-list">
+              <div className="mm-row mm-header-row">
                 <div className="mm-left">
-                  <div className="mm-name">{m.name}</div>
+                  <div className="mm-name mm-header-text">Name</div>
                 </div>
-
-                <div className="mm-role">{m.role}</div>
-
-                {canRemove && m.role !== 'Owner' && (
-                  <button
-                    type="button"
-                    className="mm-remove"
-                    onClick={() => handleRemove(m)}
-                  >
-                    Remove <span className="mm-x">×</span>
-                  </button>
-                )}
-                {(!canRemove || m.role === 'Owner') && (
-                  <div style={{ width: '140px' }}></div>
-                )}
+                <div className="mm-role mm-header-text">Role</div>
+                <div style={{ width: '140px' }}></div>
               </div>
-            ))}
-          </div>
+              {members.map((m) => (
+                <div className="mm-row" key={m.id}>
+                  <div className="mm-left">
+                    <div className="mm-name">{m.name}</div>
+                  </div>
+
+                  <div className="mm-role">{m.role}</div>
+
+                  {canRemove && m.role !== 'Owner' && (
+                    <button
+                      type="button"
+                      className="mm-remove"
+                      onClick={() => handleRemove(m)}
+                    >
+                      Remove <span className="mm-x">×</span>
+                    </button>
+                  )}
+                  {(!canRemove || m.role === 'Owner') && (
+                    <div style={{ width: '140px' }}></div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {isPersonalBoard && (
+            <div style={{ 
+              padding: '20px 0',
+              textAlign: 'center',
+              color: '#666',
+              fontSize: '14px'
+            }}>
+              Personal boards don't have member management.
+            </div>
+          )}
         </div>
 
         <div className="mm-footer">
+        {userRole === 'owner' && onDeleteBoard && (
+          <button
+            type="button"
+            className="mm-delete"
+            onClick={onDeleteBoard}
+          >
+            Delete Board
+          </button>
+        )}
           <button type="button" className="mm-done" onClick={onClose}>
             Done
           </button>

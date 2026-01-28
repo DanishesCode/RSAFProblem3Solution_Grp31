@@ -13,10 +13,11 @@ import NotificationContainer from './NotificationContainer';
 import ManageMembersModal from './ManageMembersModal';
 import BoardChatWidget from './BoardChatWidget';
 import { initializeLogs, saveBacklog, updateBacklog, updateTaskStatus, deleteBacklog, pushCodeToGitHub } from '../services/api';
-import { getSocket } from '../services/socket';
 import { isValidTransition } from '../utils/taskTransitions';
 import { useAgentStreaming } from '../hooks/useAgentStreaming';
 import '../styles.css';
+import { socket } from "../services/socket";
+
 
 function Board() {
   const navigate = useNavigate();
@@ -50,6 +51,27 @@ function Board() {
     // Initialize auth state from localStorage immediately
     return !!localStorage.getItem('githubId');
   });
+function normalizeIncoming(u) {
+  return {
+    taskid: u.taskId || u.taskid,
+    title: u.title || "",
+    prompt: u.prompt || "",
+    description: u.description || "",
+    priority: u.priority || "medium",
+    status: u.status || "toDo",
+    repo: u.repo || "",
+    ownerId: u.ownerId || "",
+    boardId: u.boardId || "",
+    assignedAgent: u.agentName || "",
+    agentName: u.agentName || "",
+    agentOutput: u.agentOutput || "",
+    progress: u.progress ?? 0,
+    agentProcess: u.agentProcess ?? "",
+    requirements: u.requirement
+      ? String(u.requirement).split(", ").filter(Boolean)
+      : (u.requirements || []),
+  };
+}
 
   // Check authentication - only run once on mount
   useEffect(() => {
@@ -256,106 +278,97 @@ function Board() {
     loadTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, boardId]); // Run when authentication status or boardId changes
+useEffect(() => {
+  if (!isAuthenticated || !boardId) return;
 
-  // -----------------------------
-  // Realtime updates (COLLAB boards only)
-  // -----------------------------
-  useEffect(() => {
-    if (!isAuthenticated || !boardId) return;
-    if (boardData?.type !== "collab") return;
+  // connect once
+  if (!socket.connected) socket.connect();
 
-    const socket = getSocket();
-    if (!socket.connected) socket.connect();
+  // join this board room
+  socket.emit("joinBoard", boardId);
 
-    socket.emit("joinBoard", { boardId });
+  // --- listeners ---
+  const onTaskCreated = (created) => {
+    // IMPORTANT: de-dupe to prevent “double task”
+    const incomingId = created.taskId || created.taskid;
+    setTasks((prev) => {
+      if (prev.some((t) => t.taskid === incomingId)) return prev;
+      return [
+        ...prev,
+        {
+          taskid: incomingId,
+          title: created.title || "",
+          prompt: created.prompt || "",
+          description: created.description || "",
+          priority: created.priority || "medium",
+          status: created.status || "toDo",
+          repo: created.repo || "",
+          ownerId: created.ownerId || "",
+          boardId: created.boardId || "",
+          assignedAgent: created.agentName || "",
+          agentName: created.agentName || "",
+          agentOutput: created.agentOutput || "",
+          requirements: created.requirement
+            ? String(created.requirement).split(", ").filter(Boolean)
+            : (created.requirements || []),
+          progress: 0,
+        },
+      ];
+    });
+  };
 
-    const normalizeIncomingTask = (t) => {
-      if (!t) return null;
+  const onTaskUpdated = (updated) => {
+    const id = updated.taskId || updated.taskid;
+    setTasks((prev) =>
+      prev.map((t) => (t.taskid === id ? { ...t, ...normalizeIncoming(updated) } : t))
+    );
+  };
 
-      // Backend uses taskId; frontend state uses taskid
-      const id = t.taskId || t.taskid;
+  const onTaskStatusUpdated = ({ taskId, status, updated }) => {
+    const id = taskId || updated?.taskId || updated?.taskid;
+    setTasks((prev) =>
+      prev.map((t) => (t.taskid === id ? { ...t, status } : t))
+    );
+  };
 
-      // Backend uses `requirement` as comma-separated string
-      const requirements = typeof t.requirement === "string"
-        ? t.requirement.split(",").map(s => s.trim()).filter(Boolean)
-        : Array.isArray(t.requirements)
-          ? t.requirements
-          : [];
+  const onTaskDeleted = ({ taskId }) => {
+    setTasks((prev) => prev.filter((t) => t.taskid !== taskId));
+  };
 
-      return {
-        taskid: id,
-        title: t.title || "",
-        prompt: t.prompt || "",
-        description: t.description || "",
-        priority: t.priority || "medium",
-        status: t.status || "toDo",
-        repo: t.repo || "",
-        ownerId: t.ownerId || "",
-        boardId: t.boardId || "",
-        agentName: t.agentName || "",
-        agentOutput: t.agentOutput || "",
-        assignedAgent: t.agentName || t.assignedAgent || "",
-        requirements,
-        progress: 0,
-        agentProcess: t.agentProcess,
-      };
-    };
+  const onAgentOutputUpdated = ({ taskId, agentOutput }) => {
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.taskid === taskId ? { ...t, agentOutput } : t
+      )
+    );
+  };
 
-    const onTaskCreated = ({ task }) => {
-      const normalized = normalizeIncomingTask(task);
-      if (!normalized?.taskid) return;
-      setTasks((prev) => {
-        const exists = prev.some((x) => String(x.taskid) === String(normalized.taskid));
-        const next = exists
-          ? prev.map((x) => (String(x.taskid) === String(normalized.taskid) ? { ...x, ...normalized } : x))
-          : [normalized, ...prev];
-        updateAgentWorkload(next);
-        return next;
-      });
-    };
+  const onTaskProgressUpdated = ({ taskId, progress }) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.taskid === taskId ? { ...t, progress } : t))
+    );
+  };
 
-    const onTaskUpdated = ({ task }) => {
-      const normalized = normalizeIncomingTask(task);
-      if (!normalized?.taskid) return;
-      setTasks((prev) => {
-        const next = prev.map((x) => (String(x.taskid) === String(normalized.taskid) ? { ...x, ...normalized } : x));
-        updateAgentWorkload(next);
-        return next;
-      });
-    };
+  socket.on("taskCreated", onTaskCreated);
+  socket.on("taskUpdated", onTaskUpdated);
+  socket.on("taskStatusUpdated", onTaskStatusUpdated);
+  socket.on("taskDeleted", onTaskDeleted);
+  socket.on("taskAgentOutputUpdated", onAgentOutputUpdated);
+  socket.on("taskProgressUpdated", onTaskProgressUpdated);
 
-    const onTaskStatusUpdated = ({ task }) => {
-      const normalized = normalizeIncomingTask(task);
-      if (!normalized?.taskid) return;
-      setTasks((prev) => {
-        const next = prev.map((x) => (String(x.taskid) === String(normalized.taskid) ? { ...x, status: normalized.status } : x));
-        updateAgentWorkload(next);
-        return next;
-      });
-    };
+  return () => {
+    socket.off("taskCreated", onTaskCreated);
+    socket.off("taskUpdated", onTaskUpdated);
+    socket.off("taskStatusUpdated", onTaskStatusUpdated);
+    socket.off("taskDeleted", onTaskDeleted);
+    socket.off("taskAgentOutputUpdated", onAgentOutputUpdated);
+    socket.off("taskProgressUpdated", onTaskProgressUpdated);
 
-    const onTaskDeleted = ({ taskId }) => {
-      if (!taskId) return;
-      setTasks((prev) => {
-        const next = prev.filter((x) => String(x.taskid) !== String(taskId));
-        updateAgentWorkload(next);
-        return next;
-      });
-    };
-
-    socket.on("taskCreated", onTaskCreated);
-    socket.on("taskUpdated", onTaskUpdated);
-    socket.on("taskStatusUpdated", onTaskStatusUpdated);
-    socket.on("taskDeleted", onTaskDeleted);
-
-    return () => {
-      socket.off("taskCreated", onTaskCreated);
-      socket.off("taskUpdated", onTaskUpdated);
-      socket.off("taskStatusUpdated", onTaskStatusUpdated);
-      socket.off("taskDeleted", onTaskDeleted);
-      socket.emit("leaveBoard", { boardId });
-    };
-  }, [isAuthenticated, boardId, boardData?.type, updateAgentWorkload]);
+    socket.emit("leaveBoard", boardId);
+    // optional: don't disconnect globally if other pages need it
+    // socket.disconnect();
+  };
+}, [isAuthenticated, boardId]);
 
   // Keep in-progress modal task in sync with latest task state (for streaming updates)
   useEffect(() => {
@@ -393,55 +406,21 @@ function Board() {
   }, []);
 
   // Handle task creation
-  const handleCreateTask = async (taskData) => {
-    try {
-      const userId = localStorage.getItem('userId') || localStorage.getItem('githubId');
-      taskData.userId = userId;
-      taskData.ownerId = userId; // Also set ownerId explicitly
-      const saved = await saveBacklog(taskData);
-      if (saved) {
-        // IMPORTANT: never generate a fallback id here.
-        // If we do, the creator can get duplicates (local temp id + socket-created real id).
-        const newTask = {
-          taskid: saved.taskid,
-          title: saved.title,
-          prompt: saved.prompt || '',
-          priority: saved.priority || 'medium',
-          status: saved.status || 'toDo',
-          repo: saved.repo || '',
-          ownerId: saved.ownerId || userId, // Include ownerId in the task object
-          boardId: saved.boardId || taskData.boardId || '',
-          agentId: saved.agentId || saved.agentid,
-          assignedAgent: saved.assignedAgent || mapAgentIdToName(saved.agentId || saved.agentid),
-          requirements: saved.requirements || [],
-          progress: 0
-        };
+const handleCreateTask = async (taskData) => {
+  try {
+    const userId = localStorage.getItem('userId') || localStorage.getItem('githubId');
+    taskData.userId = userId;
+    taskData.ownerId = userId;
 
-        // Upsert (prevents duplicates if the socket event arrives before/after this)
-        setTasks((prev) => {
-          const exists = prev.some((t) => String(t.taskid) === String(newTask.taskid));
-          const next = exists
-            ? prev.map((t) => (String(t.taskid) === String(newTask.taskid) ? { ...t, ...newTask } : t))
-            : [...prev, newTask];
-          updateAgentWorkload(next);
-          return next;
-        });
+    await saveBacklog(taskData);
 
-        pushActivity({
-          title: newTask.title,
-          agent: newTask.assignedAgent,
-          status: 'Created',
-          priority: newTask.priority,
-          repo: newTask.repo,
-          percent: 0
-        });
-        notify('Task created successfully', 2000, 'success');
-      }
-    } catch (error) {
-      console.error('Error creating task:', error);
-      notify('Failed to create task', 3000, 'error');
-    }
-  };
+    notify('Task created successfully', 2000, 'success');
+  } catch (error) {
+    console.error('Error creating task:', error);
+    notify('Failed to create task', 3000, 'error');
+  }
+};
+
 
   // Call OpenRouter to generate output for a task (via backend)
   // This is used for ALL agents (DeepSeek, Gemma, GPT_OSS) so they share the same backend brain.
@@ -529,10 +508,25 @@ function Board() {
           // Handle progress updates
           if (toStatus === 'progress') {
             updated.progress = updated.progress > 0 ? updated.progress : 67;
+            socket.emit("taskProgressUpdate", {
+              boardId,
+              taskId,
+              progress: updated.progress,
+            });
           } else if (toStatus === 'review' || toStatus === 'done') {
             updated.progress = 100;
+            socket.emit("taskProgressUpdate", {
+              boardId,
+              taskId,
+              progress: updated.progress,
+            });
           } else if (toStatus === 'cancel') {
             updated.progress = 0;
+            socket.emit("taskProgressUpdate", {
+              boardId,
+              taskId,
+              progress: updated.progress,
+            });
           }
           
           pushActivity({
@@ -1043,6 +1037,39 @@ function Board() {
           onError={(message) => notify(message, 3000, 'error')}
           boardName={boardData?.name}
           repo={boardData?.repo}
+          boardType={boardData?.type}
+          onDeleteBoard={async () => {
+            if (!boardId) return;
+            if (!window.confirm('Are you sure you want to delete this board? This will mark the board as deleted.')) {
+              return;
+            }
+
+            try {
+              const res = await fetch(`http://localhost:3000/boards/${boardId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ type: 'deleted' }),
+              });
+
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({ error: 'Failed to delete board' }));
+                notify(err.error || 'Failed to delete board', 3000, 'error');
+                return;
+              }
+
+              notify('Board deleted', 3000, 'success');
+              // Clear selected board and go back to selection
+              try {
+                localStorage.removeItem('selectedBoardId');
+              } catch {}
+              setIsSettingsOpen(false);
+              navigate('/');
+            } catch (error) {
+              console.error('Error deleting board:', error);
+              notify('Failed to delete board', 3000, 'error');
+            }
+          }}
         />
       )}
 

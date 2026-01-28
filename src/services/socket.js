@@ -1,17 +1,11 @@
 import { io } from "socket.io-client";
 
-// Single Socket.IO client shared across the app.
-// Uses same-origin by default (works with your Express+Vite middleware setup).
-let socket = null;
+// Same origin works in your setup (API_BASE_URL = "")
+// If you deploy separately later, set VITE_WS_URL.
+const URL = import.meta.env.VITE_WS_URL || "";
 
-export function getSocket() {
-  if (socket) return socket;
-
-  // "" => same origin. If you later deploy frontend separately, change this to your API url.
-  socket = io("", {
-    withCredentials: true,
-    autoConnect: false,
-  });
-
-  return socket;
-}
+export const socket = io(URL, {
+  withCredentials: true,
+  transports: ["websocket"],
+  autoConnect: false,
+});

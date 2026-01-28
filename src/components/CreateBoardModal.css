@@ -41,6 +41,11 @@
     font-size: 14px;
     outline: none;
   }
+
+  .cbm-repo-search {
+    margin-bottom: 8px;
+    background: #fff;
+  }
   
   .cbm-select {
     background: #f5f1ec;

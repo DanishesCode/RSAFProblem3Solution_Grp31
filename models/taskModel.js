@@ -222,10 +222,8 @@ async function deleteBacklogItem(taskId) {
       return null;
     }
 
-    const data = snap.data() || {};
-
     await ref.delete();
-    return { taskId, boardId: data.boardId || "", deleted: true };
+    return { taskId, deleted: true };
   } catch (err) {
     console.error("Firestore deleteBacklogItem error:", err);
     throw err;

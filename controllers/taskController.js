@@ -1,17 +1,5 @@
 const taskModel = require("../models/taskModel");
 
-function emitToBoard(req, boardId, event, payload) {
-  try {
-    const io = req.io || req.app.get("io");
-    if (!io) return;
-    if (!boardId) return;
-    io.to(`board:${String(boardId)}`).emit(event, payload);
-  } catch (e) {
-    // Don't break API responses if realtime fails
-    console.warn("Socket emit failed:", e?.message || e);
-  }
-}
-
 /**
  * Helper: safely parse JSON arrays that may come in as:
  * - actual arrays: ["a","b"]
@@ -118,10 +106,11 @@ async function createBacklog(req, res) {
     }
 
     const created = await taskModel.createBacklogItem(payload);
+    const io = req.app.get("io");
+    if (io && payload.boardId) {
+    io.to(`board:${payload.boardId}`).emit("taskCreated", created);
+}
 
-    // Realtime: broadcast to collab board members (if this is a board task)
-    const createdBoardId = created.boardId || payload.boardId;
-    emitToBoard(req, createdBoardId, "taskCreated", { task: created });
 
     return res.status(201).json(created);
   } catch (error) {
@@ -151,12 +140,19 @@ async function updateStatus(req, res) {
     }
 
     const updated = await taskModel.updateBacklogItemStatus(id, status);
+    const io = req.app.get("io");
+    if (io && updated?.boardId) {
+  io.to(`board:${updated.boardId}`).emit("taskStatusUpdated", {
+    taskId: updated.taskId || updated.taskid || id,
+    status: updated.status,
+    updated,
+  });
+}
+
 
     if (!updated) {
       return res.status(404).json({ error: "Task not found" });
     }
-
-    emitToBoard(req, updated.boardId, "taskStatusUpdated", { task: updated });
 
     return res.status(200).json(updated);
   } catch (error) {
@@ -185,8 +181,10 @@ async function updateAgentOutput(req, res) {
     if (!updated) {
       return res.status(404).json({ error: "Task not found" });
     }
-
-    emitToBoard(req, updated.boardId, "taskUpdated", { task: updated });
+    const io = req.app.get("io");
+    if (io && updated?.boardId) {
+    io.to(`board:${updated.boardId}`).emit("taskUpdated", updated);
+    }
 
     return res.status(200).json(updated);
   } catch (error) {
@@ -233,12 +231,15 @@ async function updateBacklog(req, res) {
     };
 
     const updated = await taskModel.updateBacklogItem(id, payload);
+    const io = req.app.get("io");
+if (io && updated?.boardId) {
+  io.to(`board:${updated.boardId}`).emit("taskUpdated", updated);
+}
+
 
     if (!updated) {
       return res.status(404).json({ error: "Task not found" });
     }
-
-    emitToBoard(req, updated.boardId, "taskUpdated", { task: updated });
 
     return res.status(200).json(updated);
   } catch (error) {
@@ -263,13 +264,17 @@ async function deleteBacklog(req, res) {
     }
 
     const deleted = await taskModel.deleteBacklogItem(id);
+    const io = req.app.get("io");
+if (io && deleted?.boardId) {
+  io.to(`board:${deleted.boardId}`).emit("taskDeleted", {
+    taskId: deleted.taskId || deleted.taskid || id,
+  });
+}
+
 
     if (!deleted) {
       return res.status(404).json({ error: "Task not found" });
     }
-
-    // deleted: { taskId, boardId, deleted: true }
-    emitToBoard(req, deleted.boardId, "taskDeleted", { taskId: deleted.taskId });
 
     return res.status(200).json(deleted);
   } catch (error) {
