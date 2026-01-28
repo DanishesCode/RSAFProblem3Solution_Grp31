@@ -1266,6 +1266,7 @@ main {
 
 #inprg-panel .inprg-header { 
     padding: 20px;
+    padding-right: 50px; /* Make room for close button */
     display: flex; 
     justify-content: space-between; 
     align-items: center; 
@@ -1273,11 +1274,17 @@ main {
     position: relative;
 }
 
+#inprg-panel .inprg-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
 #inprg-panel h3 { 
-    margin: 0 0 10px 0;
+    margin: 0;
     font-size: 24px;
     color: #333;
-    padding-right: 40px;
 }
 
 #inprg-panel .inprg-body { 
