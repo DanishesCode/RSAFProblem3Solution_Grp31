@@ -931,6 +931,39 @@ function Board() {
           onError={(message) => notify(message, 3000, 'error')}
           boardName={boardData?.name}
           repo={boardData?.repo}
+          boardType={boardData?.type}
+          onDeleteBoard={async () => {
+            if (!boardId) return;
+            if (!window.confirm('Are you sure you want to delete this board? This will mark the board as deleted.')) {
+              return;
+            }
+
+            try {
+              const res = await fetch(`http://localhost:3000/boards/${boardId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ type: 'deleted' }),
+              });
+
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({ error: 'Failed to delete board' }));
+                notify(err.error || 'Failed to delete board', 3000, 'error');
+                return;
+              }
+
+              notify('Board deleted', 3000, 'success');
+              // Clear selected board and go back to selection
+              try {
+                localStorage.removeItem('selectedBoardId');
+              } catch {}
+              setIsSettingsOpen(false);
+              navigate('/');
+            } catch (error) {
+              console.error('Error deleting board:', error);
+              notify('Failed to delete board', 3000, 'error');
+            }
+          }}
         />
       )}
 

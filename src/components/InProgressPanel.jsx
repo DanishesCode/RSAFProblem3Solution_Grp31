@@ -49,11 +49,13 @@ const InProgressPanel = ({ task, onClose, onUpdateProcessLog }) => {
     <div id="inprg-panel" style={{ display: 'flex' }} onClick={onClose}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: '600px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
         <div className="inprg-header">
-          <button className="btn-close" title="Close" onClick={onClose}>&times;</button>
-          <h3>{task.title || 'Task In Progress'}</h3>
-          <div className="priority-badge" style={getPriorityStyle()}>
-            {(task.priority || 'medium').charAt(0).toUpperCase() + (task.priority || 'medium').slice(1)}
+          <div className="inprg-header-left">
+            <h3>{task.title || 'Task In Progress'}</h3>
+            <div className="priority-badge" style={getPriorityStyle()}>
+              {(task.priority || 'medium').charAt(0).toUpperCase() + (task.priority || 'medium').slice(1)}
+            </div>
           </div>
+          <button className="btn-close" title="Close" onClick={onClose}>&times;</button>
         </div>
         <div className="inprg-body">
           <div className="review-section">
