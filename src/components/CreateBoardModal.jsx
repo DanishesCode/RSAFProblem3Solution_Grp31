@@ -14,6 +14,13 @@ export default function CreateBoardModal({
   const [boardName, setBoardName] = useState("");
   const [inviteInput, setInviteInput] = useState("");
   const [team, setTeam] = useState([]); // array of emails/names
+  const [repoSearch, setRepoSearch] = useState("");
+
+  const filteredRepos = useMemo(() => {
+    if (!repoSearch.trim()) return repoOptions;
+    const term = repoSearch.toLowerCase();
+    return repoOptions.filter((r) => r.toLowerCase().includes(term));
+  }, [repoOptions, repoSearch]);
 
   // reset when opening
   useEffect(() => {
@@ -74,15 +81,22 @@ export default function CreateBoardModal({
 
         {/* Select Repo */}
         <label className="cbm-label">Select Repo</label>
+        <input
+          className="cbm-input cbm-repo-search"
+          type="text"
+          placeholder="Search repos..."
+          value={repoSearch}
+          onChange={(e) => setRepoSearch(e.target.value)}
+        />
         <select
           className="cbm-select"
           value={selectedRepo}
           onChange={(e) => setSelectedRepo(e.target.value)}
         >
-          {repoOptions.length === 0 ? (
-            <option value="">No repos found</option>
+          {filteredRepos.length === 0 ? (
+            <option value="">No repos match your search</option>
           ) : (
-            repoOptions.map((r) => (
+            filteredRepos.map((r) => (
               <option key={r} value={r}>
                 {r}
               </option>

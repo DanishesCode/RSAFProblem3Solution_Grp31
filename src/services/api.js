@@ -447,6 +447,49 @@ export function getStaticAgents() {
   ];
 }
 
+// ---------------- GITHUB CODE PUSH ----------------
+
+/**
+ * POST /github/push-code
+ * Push code to GitHub repository
+ * @param {Object} data - { githubId, owner, repo, filePath, content, message, branch?, createNewBranch? }
+ * @returns {Promise<Object>} Response with commit and content info
+ */
+export async function pushCodeToGitHub(data) {
+  const { githubId, owner, repo, filePath, content, message, branch = "main", createNewBranch = false } = data;
+
+  if (!githubId || !owner || !repo || !filePath || !content || !message) {
+    throw new Error("Missing required fields: githubId, owner, repo, filePath, content, message");
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/github/push-code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        githubId,
+        owner,
+        repo,
+        filePath,
+        content,
+        message,
+        branch,
+        createNewBranch,
+      }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
+      throw new Error(errorData.error || `Failed to push code: ${res.status}`);
+    }
+
+    return await res.json();
+  } catch (error) {
+    console.error("pushCodeToGitHub error:", error);
+    throw error;
+  }
+}
+
 // ---------------- BOARD CHAT (collab boards only) ----------------
 
 export async function listBoardMessages(boardId, userId, limit = 50) {

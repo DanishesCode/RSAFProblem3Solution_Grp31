@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const CreateTaskModal = ({ task, repos, onClose, onCreate, onUpdate, notify }) => {
+const CreateTaskModal = ({ task, repos, boardRepo, onClose, onCreate, onUpdate, notify }) => {
   const [title, setTitle] = useState('');
   const [prompt, setPrompt] = useState('');
   const [description, setDescription] = useState('');
@@ -93,8 +93,8 @@ const CreateTaskModal = ({ task, repos, onClose, onCreate, onUpdate, notify }) =
 
     const agent = agents.find(a => a.name === selectedAgent);
     
-    // Get repo from board data if available, otherwise use first repo
-    const repo = repos && repos.length > 0 ? repos[0] : '';
+    // Get repo: prioritize board's repo, then task's existing repo, then first repo from list
+    const repo = boardRepo || (task?.repo) || (repos && repos.length > 0 ? repos[0] : '');
     
     // Get boardId from localStorage or props if available
     const boardId = localStorage.getItem('selectedBoardId') || '';
