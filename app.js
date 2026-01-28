@@ -139,14 +139,16 @@ async function startServer() {
 
     app.use(async (req, res, next) => {
       // Don't swallow API/login routes
-      if (
-        req.path.startsWith("/github") ||
-        req.path.startsWith("/backlog") ||
-        req.path.startsWith("/ai") ||
-        req.path.startsWith("/login")
-      ) {
-        return next();
-      }
+    if (
+     req.path.startsWith("/github") ||
+     req.path.startsWith("/backlog") ||
+     req.path.startsWith("/boards") ||
+     req.path.startsWith("/ai") ||
+     req.path.startsWith("/login")
+   ) {
+    return next();
+    }
+
 
       try {
         const vite = globalThis.vite;
@@ -185,10 +187,40 @@ async function startServer() {
 
   const server = http.createServer(app);
 
+  // --- Socket.IO ---
+  const { Server } = require("socket.io");
+  const io = new Server(server, {
+    cors: {
+      origin: [
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "http://localhost:5504",
+        "http://127.0.0.1:5504",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+      ],
+      credentials: true,
+    },
+  });
+
+  app.set("io", io);
+
+  io.on("connection", (socket) => {
+    socket.on("joinBoard", (boardId) => {
+      if (!boardId) return;
+      socket.join(`board:${boardId}`);
+    });
+
+    socket.on("leaveBoard", (boardId) => {
+      if (!boardId) return;
+      socket.leave(`board:${boardId}`);
+    });
+  });
+
   server.listen(port, () => {
     console.log(`Server running on port ${port}`);
-    console.log(`Login page: http://localhost:${port}/login`);
-    console.log(`Main app:    http://localhost:${port}/`);
   });
 }
 

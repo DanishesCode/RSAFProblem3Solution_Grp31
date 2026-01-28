@@ -16,6 +16,8 @@ import { initializeLogs, saveBacklog, updateBacklog, updateTaskStatus, deleteBac
 import { isValidTransition } from '../utils/taskTransitions';
 import { useAgentStreaming } from '../hooks/useAgentStreaming';
 import '../styles.css';
+import { socket } from "../services/socket";
+
 
 function Board() {
   const navigate = useNavigate();
@@ -49,6 +51,27 @@ function Board() {
     // Initialize auth state from localStorage immediately
     return !!localStorage.getItem('githubId');
   });
+function normalizeIncoming(u) {
+  return {
+    taskid: u.taskId || u.taskid,
+    title: u.title || "",
+    prompt: u.prompt || "",
+    description: u.description || "",
+    priority: u.priority || "medium",
+    status: u.status || "toDo",
+    repo: u.repo || "",
+    ownerId: u.ownerId || "",
+    boardId: u.boardId || "",
+    assignedAgent: u.agentName || "",
+    agentName: u.agentName || "",
+    agentOutput: u.agentOutput || "",
+    progress: u.progress ?? 0,
+    agentProcess: u.agentProcess ?? "",
+    requirements: u.requirement
+      ? String(u.requirement).split(", ").filter(Boolean)
+      : (u.requirements || []),
+  };
+}
 
   // Check authentication - only run once on mount
   useEffect(() => {
@@ -255,6 +278,97 @@ function Board() {
     loadTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, boardId]); // Run when authentication status or boardId changes
+useEffect(() => {
+  if (!isAuthenticated || !boardId) return;
+
+  // connect once
+  if (!socket.connected) socket.connect();
+
+  // join this board room
+  socket.emit("joinBoard", boardId);
+
+  // --- listeners ---
+  const onTaskCreated = (created) => {
+    // IMPORTANT: de-dupe to prevent “double task”
+    const incomingId = created.taskId || created.taskid;
+    setTasks((prev) => {
+      if (prev.some((t) => t.taskid === incomingId)) return prev;
+      return [
+        ...prev,
+        {
+          taskid: incomingId,
+          title: created.title || "",
+          prompt: created.prompt || "",
+          description: created.description || "",
+          priority: created.priority || "medium",
+          status: created.status || "toDo",
+          repo: created.repo || "",
+          ownerId: created.ownerId || "",
+          boardId: created.boardId || "",
+          assignedAgent: created.agentName || "",
+          agentName: created.agentName || "",
+          agentOutput: created.agentOutput || "",
+          requirements: created.requirement
+            ? String(created.requirement).split(", ").filter(Boolean)
+            : (created.requirements || []),
+          progress: 0,
+        },
+      ];
+    });
+  };
+
+  const onTaskUpdated = (updated) => {
+    const id = updated.taskId || updated.taskid;
+    setTasks((prev) =>
+      prev.map((t) => (t.taskid === id ? { ...t, ...normalizeIncoming(updated) } : t))
+    );
+  };
+
+  const onTaskStatusUpdated = ({ taskId, status, updated }) => {
+    const id = taskId || updated?.taskId || updated?.taskid;
+    setTasks((prev) =>
+      prev.map((t) => (t.taskid === id ? { ...t, status } : t))
+    );
+  };
+
+  const onTaskDeleted = ({ taskId }) => {
+    setTasks((prev) => prev.filter((t) => t.taskid !== taskId));
+  };
+
+  const onAgentOutputUpdated = ({ taskId, agentOutput }) => {
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.taskid === taskId ? { ...t, agentOutput } : t
+      )
+    );
+  };
+
+  const onTaskProgressUpdated = ({ taskId, progress }) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.taskid === taskId ? { ...t, progress } : t))
+    );
+  };
+
+  socket.on("taskCreated", onTaskCreated);
+  socket.on("taskUpdated", onTaskUpdated);
+  socket.on("taskStatusUpdated", onTaskStatusUpdated);
+  socket.on("taskDeleted", onTaskDeleted);
+  socket.on("taskAgentOutputUpdated", onAgentOutputUpdated);
+  socket.on("taskProgressUpdated", onTaskProgressUpdated);
+
+  return () => {
+    socket.off("taskCreated", onTaskCreated);
+    socket.off("taskUpdated", onTaskUpdated);
+    socket.off("taskStatusUpdated", onTaskStatusUpdated);
+    socket.off("taskDeleted", onTaskDeleted);
+    socket.off("taskAgentOutputUpdated", onAgentOutputUpdated);
+    socket.off("taskProgressUpdated", onTaskProgressUpdated);
+
+    socket.emit("leaveBoard", boardId);
+    // optional: don't disconnect globally if other pages need it
+    // socket.disconnect();
+  };
+}, [isAuthenticated, boardId]);
 
   // Keep in-progress modal task in sync with latest task state (for streaming updates)
   useEffect(() => {
@@ -292,44 +406,21 @@ function Board() {
   }, []);
 
   // Handle task creation
-  const handleCreateTask = async (taskData) => {
-    try {
-      const userId = localStorage.getItem('userId') || localStorage.getItem('githubId');
-      taskData.userId = userId;
-      taskData.ownerId = userId; // Also set ownerId explicitly
-      const saved = await saveBacklog(taskData);
-      if (saved) {
-        const newTask = {
-          taskid: saved.taskid || `task-${Date.now()}`,
-          title: saved.title,
-          prompt: saved.prompt || '',
-          priority: saved.priority || 'medium',
-          status: saved.status || 'toDo',
-          repo: saved.repo || '',
-          ownerId: saved.ownerId || userId, // Include ownerId in the task object
-          boardId: saved.boardId || taskData.boardId || '',
-          agentId: saved.agentId || saved.agentid,
-          assignedAgent: saved.assignedAgent || mapAgentIdToName(saved.agentId || saved.agentid),
-          requirements: saved.requirements || [],
-          progress: 0
-        };
-        setTasks(prev => [...prev, newTask]);
-        updateAgentWorkload([...tasks, newTask]);
-        pushActivity({
-          title: newTask.title,
-          agent: newTask.assignedAgent,
-          status: 'Created',
-          priority: newTask.priority,
-          repo: newTask.repo,
-          percent: 0
-        });
-        notify('Task created successfully', 2000, 'success');
-      }
-    } catch (error) {
-      console.error('Error creating task:', error);
-      notify('Failed to create task', 3000, 'error');
-    }
-  };
+const handleCreateTask = async (taskData) => {
+  try {
+    const userId = localStorage.getItem('userId') || localStorage.getItem('githubId');
+    taskData.userId = userId;
+    taskData.ownerId = userId;
+
+    await saveBacklog(taskData);
+
+    notify('Task created successfully', 2000, 'success');
+  } catch (error) {
+    console.error('Error creating task:', error);
+    notify('Failed to create task', 3000, 'error');
+  }
+};
+
 
   // Call OpenRouter to generate output for a task (via backend)
   // This is used for ALL agents (DeepSeek, Gemma, GPT_OSS) so they share the same backend brain.
@@ -417,10 +508,25 @@ function Board() {
           // Handle progress updates
           if (toStatus === 'progress') {
             updated.progress = updated.progress > 0 ? updated.progress : 67;
+            socket.emit("taskProgressUpdate", {
+              boardId,
+              taskId,
+              progress: updated.progress,
+            });
           } else if (toStatus === 'review' || toStatus === 'done') {
             updated.progress = 100;
+            socket.emit("taskProgressUpdate", {
+              boardId,
+              taskId,
+              progress: updated.progress,
+            });
           } else if (toStatus === 'cancel') {
             updated.progress = 0;
+            socket.emit("taskProgressUpdate", {
+              boardId,
+              taskId,
+              progress: updated.progress,
+            });
           }
           
           pushActivity({
