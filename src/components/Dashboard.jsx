@@ -1,196 +1,113 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import { Doughnut } from "react-chartjs-2";
-import { initializeLogs } from "../services/api";
-import "./Dashboard.css";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, LineElement, PointElement, LinearScale, CategoryScale } from 'chart.js';
+import { Doughnut, Line } from 'react-chartjs-2';
+import { initializeLogs } from '../services/api';
+import './Dashboard.css';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, LineElement, PointElement, LinearScale, CategoryScale);
 
-/* =======================
-   Date parsing (robust)
-======================= */
-function parseMaybeDate(value) {
-  if (!value) return null;
 
-  // Firestore Timestamp (web SDK / admin)
-  if (typeof value === "object") {
-    if (typeof value.toDate === "function") return value.toDate();
-    if (typeof value.seconds === "number") return new Date(value.seconds * 1000);
-    if (typeof value._seconds === "number") return new Date(value._seconds * 1000);
-  }
-
-  // Milliseconds
-  if (typeof value === "number") return new Date(value);
-
-  // String
-  if (typeof value === "string") {
-    // Try native parse
-    const d1 = new Date(value);
-    if (!Number.isNaN(d1.getTime())) return d1;
-
-    // Handle: "28 January 2026 at 19:04:16 UTC+8"
-    const cleaned = value
-      .replace(" at ", " ")
-      .replace(/UTC\+(\d{1,2})/i, (_, h) => `GMT+${String(h).padStart(2, "0")}00`)
-      .replace(/UTC-(\d{1,2})/i, (_, h) => `GMT-${String(h).padStart(2, "0")}00`);
-
-    const d2 = new Date(cleaned);
-    if (!Number.isNaN(d2.getTime())) return d2;
-  }
-
-  return null;
-}
-
-function formatDateTime(d) {
-  if (!d) return "—";
-  return d.toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-export default function Dashboard() {
+const Dashboard = () => {
   const navigate = useNavigate();
-
   const [logs, setLogs] = useState([]);
   const [filteredLogs, setFilteredLogs] = useState([]);
-
-  const [githubNameById, setGithubNameById] = useState({});
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [ownerSearch, setOwnerSearch] = useState("");
-  const [filterText, setFilterText] = useState("None");
-
   const [selectedFilters, setSelectedFilters] = useState({
-    owner: new Set(),
+    taskOwner: new Set(),
     aiAgent: new Set(),
-    priority: new Set(),
+    priority: new Set()
   });
   const [filterText, setFilterText] = useState('None');
-  const [repoSearch, setRepoSearch] = useState('');
+  const [ownerSearch, setOwnerSearch] = useState('');
   const [agentStats, setAgentStats] = useState({});
+  const [ownerStats, setOwnerStats] = useState({});
 
-  /* =======================
-     Initial load
-  ======================= */
   useEffect(() => {
-    const load = async () => {
-      const userId = localStorage.getItem("userId");
-      if (!userId) {
-        navigate("/login", { replace: true });
-        return;
-      }
-
+    const loadLogs = async () => {
       try {
-        // Load tasks
+        const userId = localStorage.getItem('userId');
+        if (!userId) {
+          navigate('/login', { replace: true });
+          return;
+        }
         const userLogs = await initializeLogs(userId);
         setLogs(userLogs);
         setFilteredLogs(userLogs);
-
-        // Load users (githubId -> githubName)
-        const res = await fetch("/users");
-        if (res.ok) {
-          const users = await res.json();
-          const map = {};
-          for (const u of users) {
-            if (u?.githubId && u?.githubName) {
-              map[String(u.githubId)] = String(u.githubName);
-            }
-          }
-          setGithubNameById(map);
-        } else {
-          console.warn("GET /users failed:", res.status);
-        }
-      } catch (e) {
-        console.error("Dashboard load error:", e);
+      } catch (error) {
+        console.error('Error loading logs:', error);
       }
     };
+    loadLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
-    load();
-  }, [navigate]);
+  const repos = React.useMemo(() => {
+    const reposString = localStorage.getItem('repos');
+    return reposString ? reposString.split(',').filter(Boolean) : [];
+  }, []);
 
-  /* =======================
-     Helpers
-  ======================= */
-  const displayOwner = (ownerId) => {
-    const id = ownerId ? String(ownerId) : "Unknown";
-    return githubNameById[id] || id;
-  };
-
-  const handleFilterToggle = (type, value) => {
-    setSelectedFilters((prev) => {
-      const next = { ...prev };
-      const s = new Set(next[type]);
-      s.has(value) ? s.delete(value) : s.add(value);
-      next[type] = s;
-      return next;
+  const owners = React.useMemo(() => {
+    const ownerSet = new Set();
+    logs.forEach(log => {
+      if (log.ownerId) {
+        ownerSet.add(log.ownerId);
+      }
     });
-  };
-
-  /* =======================
-     Owner list for filter
-  ======================= */
-  const allOwnerIds = useMemo(() => {
-    const s = new Set();
-    logs.forEach((l) => l?.ownerId && s.add(String(l.ownerId)));
-    return Array.from(s).sort();
+    return Array.from(ownerSet).sort();
   }, [logs]);
 
-  const filteredOwnerIds = useMemo(() => {
-    if (!ownerSearch) return allOwnerIds;
-    const q = ownerSearch.toLowerCase();
-    return allOwnerIds.filter((id) => {
-      const name = (githubNameById[id] || "").toLowerCase();
-      return id.includes(q) || name.includes(q);
+  const filteredOwners = React.useMemo(() => {
+    if (!ownerSearch) return owners;
+    return owners.filter(owner => 
+      owner.toLowerCase().includes(ownerSearch.toLowerCase())
+    );
+  }, [owners, ownerSearch]);
+
+  const handleFilterToggle = (type, value) => {
+    setSelectedFilters(prev => {
+      const newFilters = { ...prev };
+      const filterSet = new Set(newFilters[type]);
+      if (filterSet.has(value)) {
+        filterSet.delete(value);
+      } else {
+        filterSet.add(value);
+      }
+      newFilters[type] = filterSet;
+      return newFilters;
     });
-  }, [allOwnerIds, ownerSearch, githubNameById]);
+  };
 
-  /* =======================
-     Apply filters
-  ======================= */
   const handleApplyFilters = () => {
-    const next = logs.filter((l) => {
-      const ownerId = String(l.ownerId || "");
-      const agent = l.assignedAgent || l.agentName || "";
-      const priority = l.priority || "";
-
-      if (selectedFilters.owner.size && !selectedFilters.owner.has(ownerId)) return false;
-      if (selectedFilters.aiAgent.size && !selectedFilters.aiAgent.has(agent)) return false;
-      if (selectedFilters.priority.size && !selectedFilters.priority.has(priority)) return false;
-
+    const filtered = logs.filter(log => {
+      if (selectedFilters.taskOwner.size && !selectedFilters.taskOwner.has(log.ownerId)) return false;
+      const agentName = log.assignedAgent || log.agentName || '';
+      if (selectedFilters.aiAgent.size && !selectedFilters.aiAgent.has(agentName)) return false;
+      if (selectedFilters.priority.size && !selectedFilters.priority.has(log.priority)) return false;
       return true;
     });
 
-    setFilteredLogs(next);
+    setFilteredLogs(filtered);
+    
+    const filterTexts = [];
+    if (selectedFilters.taskOwner.size) {
+      filterTexts.push(`Owner: ${[...selectedFilters.taskOwner].join(', ')}`);
+    }
+    if (selectedFilters.aiAgent.size) {
+      filterTexts.push(`AI Agent: ${[...selectedFilters.aiAgent].join(', ')}`);
+    }
+    if (selectedFilters.priority.size) {
+      filterTexts.push(`Priority: ${[...selectedFilters.priority].join(', ')}`);
+    }
 
-    const parts = [];
-    if (selectedFilters.owner.size)
-      parts.push(`Owner: ${[...selectedFilters.owner].map(displayOwner).join(", ")}`);
-    if (selectedFilters.aiAgent.size)
-      parts.push(`AI Agent: ${[...selectedFilters.aiAgent].join(", ")}`);
-    if (selectedFilters.priority.size)
-      parts.push(`Priority: ${[...selectedFilters.priority].join(", ")}`);
-
-    setFilterText(parts.length ? parts.join(" | ") : "None");
+    setFilterText(filterTexts.length > 0 ? filterTexts.join(' | ') : 'None');
     setIsSidebarOpen(false);
   };
 
-  /* =======================
-     Status counts
-  ======================= */
-  const counts = useMemo(() => {
+  const counts = React.useMemo(() => {
     const c = { toDo: 0, progress: 0, review: 0, done: 0, cancel: 0 };
-    filteredLogs.forEach((l) => {
-      if (l.status === "toDo") c.toDo++;
-      else if (l.status === "progress") c.progress++;
-      else if (l.status === "review") c.review++;
-      else if (l.status === "done") c.done++;
-      else if (l.status === "cancel") c.cancel++;
     const agents = {};
+    const owners = {};
     const priorities = { high: 0, medium: 0, low: 0 };
     
     filteredLogs.forEach(log => {
@@ -203,113 +120,138 @@ export default function Dashboard() {
       const agentName = log.assignedAgent || log.agentName || 'Unknown';
       agents[agentName] = (agents[agentName] || 0) + 1;
       
+      const ownerName = log.ownerId || 'Unknown';
+      owners[ownerName] = (owners[ownerName] || 0) + 1;
+      
       if (log.priority === 'high') priorities.high++;
       else if (log.priority === 'medium') priorities.medium++;
       else if (log.priority === 'low') priorities.low++;
     });
     
     setAgentStats(agents);
+    setOwnerStats(owners);
     c.priorities = priorities;
     return c;
   }, [filteredLogs]);
 
-  const totalCount =
-    counts.toDo + counts.progress + counts.review + counts.done + counts.cancel;
   const totalCount = counts.toDo + counts.progress + counts.review + counts.done + counts.cancel;
   const completionRate = totalCount > 0 ? Math.round((counts.done / totalCount) * 100) : 0;
   const completedTasks = counts.done + counts.cancel;
+  
+  // Additional statistics
+  const topContributor = Object.entries(ownerStats).length > 0 
+    ? Object.entries(ownerStats).reduce((max, [owner, count]) => count > max.count ? {owner, count} : max, {owner: 'N/A', count: 0})
+    : {owner: 'N/A', count: 0};
+    
+  const topAgent = Object.entries(agentStats).length > 0
+    ? Object.entries(agentStats).reduce((max, [agent, count]) => count > max.count ? {agent, count} : max, {agent: 'N/A', count: 0})
+    : {agent: 'N/A', count: 0};
 
-  /* =======================
-     Chart
-  ======================= */
-  const chartData = {
-    labels: ["To-Do", "In Progress", "In Review", "Done", "Cancelled"],
-    datasets: [
-      {
-        data: [
-          counts.toDo,
-          counts.progress,
-          counts.review,
-          counts.done,
-          counts.cancel,
-        ],
-        backgroundColor: [
-          "#4D4D5B",
-          "#1D27DA",
-          "#181FAA",
-          "#15D94A",
-          "#F71E21",
-        ],
-        borderWidth: 2,
+  const avgTasksPerOwner = Object.keys(ownerStats).length > 0 
+    ? Math.round(totalCount / Object.keys(ownerStats).length)
+    : 0;
+
+  // Contribution activity data - calculate daily activity
+  const contributionData = React.useMemo(() => {
+    const dailyStats = {};
+    const ownerDailyStats = {};
+    
+    // Get last 30 days
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+    
+    filteredLogs.forEach(log => {
+      const taskDate = log.createdAt ? new Date(log.createdAt.toDate ? log.createdAt.toDate() : log.createdAt) : new Date();
+      const dateStr = taskDate.toISOString().split('T')[0];
+      
+      if (taskDate >= thirtyDaysAgo && taskDate <= today) {
+        // Daily total activity
+        dailyStats[dateStr] = (dailyStats[dateStr] || 0) + 1;
+        
+        // Per-owner daily activity
+        const owner = log.ownerId || 'Unknown';
+        if (!ownerDailyStats[owner]) ownerDailyStats[owner] = {};
+        ownerDailyStats[owner][dateStr] = (ownerDailyStats[owner][dateStr] || 0) + 1;
+      }
+    });
+
+    // Generate date range
+    const dates = [];
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today.getTime() - (i * 24 * 60 * 60 * 1000));
+      const dateStr = date.toISOString().split('T')[0];
+      dates.push({ date: dateStr, count: dailyStats[dateStr] || 0 });
+    }
+
+    return { 
+      dailyActivity: dates, 
+      ownerDailyActivity: ownerDailyStats 
+    };
+  }, [filteredLogs]);
+
+  // Line chart for activity over time
+  const activityChartData = {
+    labels: contributionData.dailyActivity.map(d => {
+      const date = new Date(d.date);
+      return `${date.getMonth() + 1}/${date.getDate()}`;
+    }),
+    datasets: [{
+      label: 'Tasks Created',
+      data: contributionData.dailyActivity.map(d => d.count),
+      borderColor: '#C9B59C',
+      backgroundColor: 'rgba(201, 181, 156, 0.1)',
+      tension: 0.4,
+      fill: true,
+      pointRadius: 4,
+      pointBackgroundColor: '#C9B59C',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2
+    }]
+  };
+
+  const activityChartOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        labels: { color: '#222', font: { weight: '600' } }
       },
-    ],
+      tooltip: { enabled: true }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { color: '#666' },
+        grid: { color: 'rgba(0,0,0,0.05)' }
+      },
+      x: {
+        ticks: { color: '#666' },
+        grid: { color: 'rgba(0,0,0,0.05)' }
+      }
+    }
+  };
+
+  const chartData = {
+    labels: ['To-Do', 'In Progress', 'In Review', 'Done', 'Cancelled'],
+    datasets: [{
+      data: [counts.toDo, counts.progress, counts.review, counts.done, counts.cancel],
+      backgroundColor: ['#4D4D5B', '#1D27DA', '#181FAA', '#15D94A', '#F71E21'],
+      borderWidth: 2
+    }]
   };
 
   const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: "65%",
+    cutout: '60%',
     plugins: {
       legend: { display: false },
-      tooltip: { enabled: true },
-    },
+      tooltip: { enabled: true }
+    }
   };
 
-  /* =======================
-     Stats (most important)
-  ======================= */
-  const stats = useMemo(() => {
-    let latest = null;
-    const byOwner = new Map();
-
-    filteredLogs.forEach((l) => {
-      const ownerId = String(l.ownerId || "Unknown");
-      const d =
-        parseMaybeDate(l.updatedAt) || parseMaybeDate(l.createdAt);
-
-      if (d && (!latest || d > latest)) latest = d;
-
-      if (!byOwner.has(ownerId)) byOwner.set(ownerId, 0);
-      byOwner.set(ownerId, byOwner.get(ownerId) + 1);
-    });
-
-    let topOwnerId = "—";
-    let topCount = 0;
-    for (const [id, count] of byOwner.entries()) {
-      if (count > topCount) {
-        topCount = count;
-        topOwnerId = id;
-      }
-    }
-
-    return {
-      lastContribution: latest,
-      topOwnerId,
-      topOwnerName: displayOwner(topOwnerId),
-      topCount,
-      activeCount: totalCount - counts.done - counts.cancel,
-      doneCount: counts.done,
-    };
-  }, [filteredLogs, githubNameById, counts, totalCount]);
-
-  /* =======================
-     Render
-  ======================= */
   return (
     <div className="dashboard-container">
-      <header className="dash-header">
-        <div className="dash-header-left">
-          <button className="btn-dashboard" onClick={() => setIsSidebarOpen(true)}>
-            Filters
-          </button>
-          <button className="btn-dashboard" onClick={() => navigate("/")}>
-            Back
-          </button>
-        </div>
-
-        <div className="dash-header-center">
-          <h1 className="dash-title">Dashboard</h1>
-          <div className="dash-subtitle">Filters: {filterText}</div>
       <header className="top">
         <button className="filters" onClick={() => setIsSidebarOpen(true)}>
           ⚙️ Filters
@@ -318,32 +260,8 @@ export default function Dashboard() {
           <h1 className="title">Task Dashboard</h1>
           <div className="subtitle">📊 {filterText}</div>
         </div>
-
-        <div className="dash-header-right" />
       </header>
 
-      <main className="dash-main">
-        <section className="dash-grid">
-          {/* LEFT */}
-          <div className="chart-card">
-            <div className="chart-wrap">
-              <div className="chart-canvas">
-                <Doughnut data={chartData} options={chartOptions} />
-              </div>
-              <div className="center-label">
-                <div className="count">{totalCount}</div>
-                <div className="count-sub">Total Tasks</div>
-              </div>
-            </div>
-
-            <div className="legend">
-              {["todo","progress","review","done","cancel"].map((_,i)=>null)}
-              <div className="legend-item"><span className="swatch swatch-todo"/> To-Do</div>
-              <div className="legend-item"><span className="swatch swatch-progress"/> In Progress</div>
-              <div className="legend-item"><span className="swatch swatch-review"/> In Review</div>
-              <div className="legend-item"><span className="swatch swatch-done"/> Done</div>
-              <div className="legend-item"><span className="swatch swatch-cancel"/> Cancelled</div>
-            </div>
       <main className="main">
         {/* Summary Stats */}
         <div className="summary-stats">
@@ -364,44 +282,15 @@ export default function Dashboard() {
             <div className="stat-value">{counts.priorities?.high || 0}</div>
             <div className="stat-label">High Priority</div>
           </div>
-        </div>
-
-          {/* RIGHT */}
-          <div className="stats-grid-small">
-            <div className="stat-card small">
-              <div className="stat-label">Total Tasks</div>
-              <div className="stat-value">{totalCount}</div>
-            </div>
-
-            <div className="stat-card small">
-              <div className="stat-label">Active Tasks</div>
-              <div className="stat-value">{stats.activeCount}</div>
-            </div>
-
-            <div className="stat-card small">
-              <div className="stat-label">Done</div>
-              <div className="stat-value">{stats.doneCount}</div>
-            </div>
-
-            <div className="stat-card small">
-              <div className="stat-label">Most Contributions</div>
-              <div className="stat-value smallText">
-                {stats.topOwnerName} ({stats.topCount})
-              </div>
-            </div>
-
-            <div className="stat-card wide">
-              <div className="stat-label">Last Contribution</div>
-              <div className="stat-value smallText">
-                {formatDateTime(stats.lastContribution)}
-              </div>
-            </div>
+          <div className="stat-card stat-total">
+            <div className="stat-value">{Object.keys(ownerStats).length}</div>
+            <div className="stat-label">Contributors</div>
           </div>
-        </section>
-
-        {/* Sidebar */}
-        <div className={`filter-sidebar ${isSidebarOpen ? "open" : ""}`}>
-          <span className="close-btn" onClick={() => setIsSidebarOpen(false)}>X</span>
+          <div className="stat-card stat-total">
+            <div className="stat-value">{avgTasksPerOwner}</div>
+            <div className="stat-label">Avg Tasks/Owner</div>
+          </div>
+        </div>
 
         {/* Main Chart & Details Section */}
         <div className="chart-area">
@@ -447,10 +336,30 @@ export default function Dashboard() {
           {/* Agent & Priority Stats */}
           <div className="details-section">
             <div className="detail-card">
+              <h3 className="detail-title">� Task Contributors</h3>
+              <div className="agent-list">
+                {Object.entries(ownerStats).length > 0 ? (
+                  Object.entries(ownerStats)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([owner, count]) => (
+                      <div key={owner} className="agent-item">
+                        <span className="agent-name">{owner}</span>
+                        <span className="agent-count">{count}</span>
+                      </div>
+                    ))
+                ) : (
+                  <p className="empty-state">No contributors</p>
+                )}
+              </div>
+            </div>
+
+            <div className="detail-card">
               <h3 className="detail-title">📌 AI Agent Distribution</h3>
               <div className="agent-list">
                 {Object.entries(agentStats).length > 0 ? (
-                  Object.entries(agentStats).map(([agent, count]) => (
+                  Object.entries(agentStats)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([agent, count]) => (
                     <div key={agent} className="agent-item">
                       <span className="agent-name">{agent}</span>
                       <span className="agent-count">{count}</span>
@@ -482,6 +391,108 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Quick Insights Section */}
+        <div className="insights-section">
+          <h2 className="insights-title">🎯 Quick Insights</h2>
+          <div className="insights-grid">
+            <div className="insight-card">
+              <div className="insight-icon">👑</div>
+              <div className="insight-content">
+                <div className="insight-label">Top Contributor</div>
+                <div className="insight-value">{topContributor.owner}</div>
+                <div className="insight-detail">{topContributor.count} tasks</div>
+              </div>
+            </div>
+            
+            <div className="insight-card">
+              <div className="insight-icon">🤖</div>
+              <div className="insight-content">
+                <div className="insight-label">Most Used Agent</div>
+                <div className="insight-value">{topAgent.agent}</div>
+                <div className="insight-detail">{topAgent.count} tasks</div>
+              </div>
+            </div>
+            
+            <div className="insight-card">
+              <div className="insight-icon">📊</div>
+              <div className="insight-content">
+                <div className="insight-label">Active Contributors</div>
+                <div className="insight-value">{Object.keys(ownerStats).length}</div>
+                <div className="insight-detail">Team size</div>
+              </div>
+            </div>
+            
+            <div className="insight-card">
+              <div className="insight-icon">⚡</div>
+              <div className="insight-content">
+                <div className="insight-label">Pending Tasks</div>
+                <div className="insight-value">{counts.toDo + counts.progress}</div>
+                <div className="insight-detail">To complete</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Contribution Activity Chart */}
+        <div className="contribution-section">
+          <h2 className="contribution-title">📊 Activity Timeline (Last 30 Days)</h2>
+          <div className="activity-chart-wrapper">
+            <div className="activity-chart-container">
+              <Line data={activityChartData} options={activityChartOptions} />
+            </div>
+          </div>
+        </div>
+
+        {/* Contribution Heatmap */}
+        <div className="contribution-section">
+          <h2 className="contribution-title">🔥 Contribution Heatmap</h2>
+          <div className="heatmap-wrapper">
+            <div className="heatmap-container">
+              <div className="heatmap-legend">
+                <span className="heatmap-label">Less</span>
+                <div className="heatmap-scale">
+                  <div className="heatmap-box" style={{ opacity: 0.1 }}></div>
+                  <div className="heatmap-box" style={{ opacity: 0.4 }}></div>
+                  <div className="heatmap-box" style={{ opacity: 0.7 }}></div>
+                  <div className="heatmap-box" style={{ opacity: 1 }}></div>
+                </div>
+                <span className="heatmap-label">More</span>
+              </div>
+
+              <div className="heatmap-data">
+                {Object.entries(contributionData.ownerDailyActivity).length > 0 ? (
+                  Object.entries(contributionData.ownerDailyActivity).map(([owner, dailyData]) => (
+                    <div key={owner} className="heatmap-row">
+                      <div className="heatmap-owner">{owner}</div>
+                      <div className="heatmap-cells">
+                        {contributionData.dailyActivity.map((day) => {
+                          const count = dailyData[day.date] || 0;
+                          const maxCount = Math.max(1, Math.max(...Object.values(dailyData)));
+                          const intensity = maxCount > 0 ? count / maxCount : 0;
+                          
+                          return (
+                            <div
+                              key={day.date}
+                              className="heatmap-cell"
+                              style={{
+                                backgroundColor: `rgba(201, 181, 156, ${intensity})`,
+                                borderColor: intensity > 0 ? '#999' : '#ddd'
+                              }}
+                              title={`${owner} - ${day.date}: ${count} task${count !== 1 ? 's' : ''}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="empty-state">No contribution data available</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="back-btn-wrap">
           <button className="back" onClick={() => navigate('/')}>
             ← Back to main page
@@ -494,47 +505,73 @@ export default function Dashboard() {
           <div className="filter-section">
             <h3>Task Owner</h3>
             <input
-              placeholder="Search by name or id"
+              type="text"
+              placeholder="Search"
               value={ownerSearch}
               onChange={(e) => setOwnerSearch(e.target.value)}
             />
             <div className="scrollable">
-              {filteredOwnerIds.map((id) => (
+              {filteredOwners.map(owner => (
                 <button
-                  key={id}
-                  className={selectedFilters.owner.has(id) ? "selected" : ""}
-                  onClick={() => handleFilterToggle("owner", id)}
+                  key={owner}
+                  value={owner}
+                  className={selectedFilters.taskOwner.has(owner) ? 'selected' : ''}
+                  onClick={() => handleFilterToggle('taskOwner', owner)}
                 >
-                  {displayOwner(id)}
+                  {owner}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="filter-section">
-            <h3>AI Agent</h3>
-            {["DeepSeek", "GPT_OSS", "Gemma"].map((a) => (
-              <button
-                key={a}
-                className={selectedFilters.aiAgent.has(a) ? "selected" : ""}
-                onClick={() => handleFilterToggle("aiAgent", a)}
-              >
-                {a}
-              </button>
-            ))}
+            <h3>Ai Agent</h3>
+            <button
+              value="DeepSeek"
+              className={selectedFilters.aiAgent.has('DeepSeek') ? 'selected' : ''}
+              onClick={() => handleFilterToggle('aiAgent', 'DeepSeek')}
+            >
+              DeepSeek Ai
+            </button>
+            <button
+              value="GPT_OSS"
+              className={selectedFilters.aiAgent.has('GPT_OSS') ? 'selected' : ''}
+              onClick={() => handleFilterToggle('aiAgent', 'GPT_OSS')}
+            >
+              GPT_OSS Ai
+            </button>
+            <button
+              value="Gemma"
+              className={selectedFilters.aiAgent.has('Gemma') ? 'selected' : ''}
+              onClick={() => handleFilterToggle('aiAgent', 'Gemma')}
+            >
+              Gemma Ai
+            </button>
           </div>
 
           <div className="filter-section">
             <h3>Priority</h3>
-            {["high", "medium", "low"].map((p) => (
-              <button
-                key={p}
-                className={selectedFilters.priority.has(p) ? "selected" : ""}
-                onClick={() => handleFilterToggle("priority", p)}
-              >
-                {p}
-              </button>
-            ))}
+            <button
+              value="high"
+              className={selectedFilters.priority.has('high') ? 'selected' : ''}
+              onClick={() => handleFilterToggle('priority', 'high')}
+            >
+              high
+            </button>
+            <button
+              value="medium"
+              className={selectedFilters.priority.has('medium') ? 'selected' : ''}
+              onClick={() => handleFilterToggle('priority', 'medium')}
+            >
+              medium
+            </button>
+            <button
+              value="low"
+              className={selectedFilters.priority.has('low') ? 'selected' : ''}
+              onClick={() => handleFilterToggle('priority', 'low')}
+            >
+              low
+            </button>
           </div>
 
           <button className="apply-btn" onClick={handleApplyFilters}>
@@ -544,4 +581,7 @@ export default function Dashboard() {
       </main>
     </div>
   );
-}
+};
+
+export default Dashboard;
+
