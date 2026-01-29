@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { Doughnut } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, LineElement, PointElement, LinearScale, CategoryScale } from 'chart.js';
+import { Doughnut, Line } from 'react-chartjs-2';
 import { initializeLogs } from '../services/api';
 import './Dashboard.css';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, LineElement, PointElement, LinearScale, CategoryScale);
 
 
 const Dashboard = () => {
@@ -14,13 +14,14 @@ const Dashboard = () => {
   const [filteredLogs, setFilteredLogs] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState({
-    repository: new Set(),
+    taskOwner: new Set(),
     aiAgent: new Set(),
     priority: new Set()
   });
   const [filterText, setFilterText] = useState('None');
-  const [repoSearch, setRepoSearch] = useState('');
+  const [ownerSearch, setOwnerSearch] = useState('');
   const [agentStats, setAgentStats] = useState({});
+  const [ownerStats, setOwnerStats] = useState({});
 
   useEffect(() => {
     const loadLogs = async () => {
@@ -46,12 +47,22 @@ const Dashboard = () => {
     return reposString ? reposString.split(',').filter(Boolean) : [];
   }, []);
 
-  const filteredRepos = React.useMemo(() => {
-    if (!repoSearch) return repos;
-    return repos.filter(repo => 
-      repo.toLowerCase().includes(repoSearch.toLowerCase())
+  const owners = React.useMemo(() => {
+    const ownerSet = new Set();
+    logs.forEach(log => {
+      if (log.ownerId) {
+        ownerSet.add(log.ownerId);
+      }
+    });
+    return Array.from(ownerSet).sort();
+  }, [logs]);
+
+  const filteredOwners = React.useMemo(() => {
+    if (!ownerSearch) return owners;
+    return owners.filter(owner => 
+      owner.toLowerCase().includes(ownerSearch.toLowerCase())
     );
-  }, [repos, repoSearch]);
+  }, [owners, ownerSearch]);
 
   const handleFilterToggle = (type, value) => {
     setSelectedFilters(prev => {
@@ -69,7 +80,7 @@ const Dashboard = () => {
 
   const handleApplyFilters = () => {
     const filtered = logs.filter(log => {
-      if (selectedFilters.repository.size && !selectedFilters.repository.has(log.repo)) return false;
+      if (selectedFilters.taskOwner.size && !selectedFilters.taskOwner.has(log.ownerId)) return false;
       const agentName = log.assignedAgent || log.agentName || '';
       if (selectedFilters.aiAgent.size && !selectedFilters.aiAgent.has(agentName)) return false;
       if (selectedFilters.priority.size && !selectedFilters.priority.has(log.priority)) return false;
@@ -79,8 +90,8 @@ const Dashboard = () => {
     setFilteredLogs(filtered);
     
     const filterTexts = [];
-    if (selectedFilters.repository.size) {
-      filterTexts.push(`Repository: ${[...selectedFilters.repository].join(', ')}`);
+    if (selectedFilters.taskOwner.size) {
+      filterTexts.push(`Owner: ${[...selectedFilters.taskOwner].join(', ')}`);
     }
     if (selectedFilters.aiAgent.size) {
       filterTexts.push(`AI Agent: ${[...selectedFilters.aiAgent].join(', ')}`);
@@ -96,6 +107,7 @@ const Dashboard = () => {
   const counts = React.useMemo(() => {
     const c = { toDo: 0, progress: 0, review: 0, done: 0, cancel: 0 };
     const agents = {};
+    const owners = {};
     const priorities = { high: 0, medium: 0, low: 0 };
     
     filteredLogs.forEach(log => {
@@ -108,12 +120,16 @@ const Dashboard = () => {
       const agentName = log.assignedAgent || log.agentName || 'Unknown';
       agents[agentName] = (agents[agentName] || 0) + 1;
       
+      const ownerName = log.ownerId || 'Unknown';
+      owners[ownerName] = (owners[ownerName] || 0) + 1;
+      
       if (log.priority === 'high') priorities.high++;
       else if (log.priority === 'medium') priorities.medium++;
       else if (log.priority === 'low') priorities.low++;
     });
     
     setAgentStats(agents);
+    setOwnerStats(owners);
     c.priorities = priorities;
     return c;
   }, [filteredLogs]);
@@ -121,6 +137,101 @@ const Dashboard = () => {
   const totalCount = counts.toDo + counts.progress + counts.review + counts.done + counts.cancel;
   const completionRate = totalCount > 0 ? Math.round((counts.done / totalCount) * 100) : 0;
   const completedTasks = counts.done + counts.cancel;
+  
+  // Additional statistics
+  const topContributor = Object.entries(ownerStats).length > 0 
+    ? Object.entries(ownerStats).reduce((max, [owner, count]) => count > max.count ? {owner, count} : max, {owner: 'N/A', count: 0})
+    : {owner: 'N/A', count: 0};
+    
+  const topAgent = Object.entries(agentStats).length > 0
+    ? Object.entries(agentStats).reduce((max, [agent, count]) => count > max.count ? {agent, count} : max, {agent: 'N/A', count: 0})
+    : {agent: 'N/A', count: 0};
+
+  const avgTasksPerOwner = Object.keys(ownerStats).length > 0 
+    ? Math.round(totalCount / Object.keys(ownerStats).length)
+    : 0;
+
+  // Contribution activity data - calculate daily activity
+  const contributionData = React.useMemo(() => {
+    const dailyStats = {};
+    const ownerDailyStats = {};
+    
+    // Get last 30 days
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+    
+    filteredLogs.forEach(log => {
+      const taskDate = log.createdAt ? new Date(log.createdAt.toDate ? log.createdAt.toDate() : log.createdAt) : new Date();
+      const dateStr = taskDate.toISOString().split('T')[0];
+      
+      if (taskDate >= thirtyDaysAgo && taskDate <= today) {
+        // Daily total activity
+        dailyStats[dateStr] = (dailyStats[dateStr] || 0) + 1;
+        
+        // Per-owner daily activity
+        const owner = log.ownerId || 'Unknown';
+        if (!ownerDailyStats[owner]) ownerDailyStats[owner] = {};
+        ownerDailyStats[owner][dateStr] = (ownerDailyStats[owner][dateStr] || 0) + 1;
+      }
+    });
+
+    // Generate date range
+    const dates = [];
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today.getTime() - (i * 24 * 60 * 60 * 1000));
+      const dateStr = date.toISOString().split('T')[0];
+      dates.push({ date: dateStr, count: dailyStats[dateStr] || 0 });
+    }
+
+    return { 
+      dailyActivity: dates, 
+      ownerDailyActivity: ownerDailyStats 
+    };
+  }, [filteredLogs]);
+
+  // Line chart for activity over time
+  const activityChartData = {
+    labels: contributionData.dailyActivity.map(d => {
+      const date = new Date(d.date);
+      return `${date.getMonth() + 1}/${date.getDate()}`;
+    }),
+    datasets: [{
+      label: 'Tasks Created',
+      data: contributionData.dailyActivity.map(d => d.count),
+      borderColor: '#C9B59C',
+      backgroundColor: 'rgba(201, 181, 156, 0.1)',
+      tension: 0.4,
+      fill: true,
+      pointRadius: 4,
+      pointBackgroundColor: '#C9B59C',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2
+    }]
+  };
+
+  const activityChartOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        labels: { color: '#222', font: { weight: '600' } }
+      },
+      tooltip: { enabled: true }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { color: '#666' },
+        grid: { color: 'rgba(0,0,0,0.05)' }
+      },
+      x: {
+        ticks: { color: '#666' },
+        grid: { color: 'rgba(0,0,0,0.05)' }
+      }
+    }
+  };
 
   const chartData = {
     labels: ['To-Do', 'In Progress', 'In Review', 'Done', 'Cancelled'],
@@ -171,6 +282,14 @@ const Dashboard = () => {
             <div className="stat-value">{counts.priorities?.high || 0}</div>
             <div className="stat-label">High Priority</div>
           </div>
+          <div className="stat-card stat-total">
+            <div className="stat-value">{Object.keys(ownerStats).length}</div>
+            <div className="stat-label">Contributors</div>
+          </div>
+          <div className="stat-card stat-total">
+            <div className="stat-value">{avgTasksPerOwner}</div>
+            <div className="stat-label">Avg Tasks/Owner</div>
+          </div>
         </div>
 
         {/* Main Chart & Details Section */}
@@ -217,10 +336,30 @@ const Dashboard = () => {
           {/* Agent & Priority Stats */}
           <div className="details-section">
             <div className="detail-card">
+              <h3 className="detail-title">� Task Contributors</h3>
+              <div className="agent-list">
+                {Object.entries(ownerStats).length > 0 ? (
+                  Object.entries(ownerStats)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([owner, count]) => (
+                      <div key={owner} className="agent-item">
+                        <span className="agent-name">{owner}</span>
+                        <span className="agent-count">{count}</span>
+                      </div>
+                    ))
+                ) : (
+                  <p className="empty-state">No contributors</p>
+                )}
+              </div>
+            </div>
+
+            <div className="detail-card">
               <h3 className="detail-title">📌 AI Agent Distribution</h3>
               <div className="agent-list">
                 {Object.entries(agentStats).length > 0 ? (
-                  Object.entries(agentStats).map(([agent, count]) => (
+                  Object.entries(agentStats)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([agent, count]) => (
                     <div key={agent} className="agent-item">
                       <span className="agent-name">{agent}</span>
                       <span className="agent-count">{count}</span>
@@ -252,6 +391,108 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Quick Insights Section */}
+        <div className="insights-section">
+          <h2 className="insights-title">🎯 Quick Insights</h2>
+          <div className="insights-grid">
+            <div className="insight-card">
+              <div className="insight-icon">👑</div>
+              <div className="insight-content">
+                <div className="insight-label">Top Contributor</div>
+                <div className="insight-value">{topContributor.owner}</div>
+                <div className="insight-detail">{topContributor.count} tasks</div>
+              </div>
+            </div>
+            
+            <div className="insight-card">
+              <div className="insight-icon">🤖</div>
+              <div className="insight-content">
+                <div className="insight-label">Most Used Agent</div>
+                <div className="insight-value">{topAgent.agent}</div>
+                <div className="insight-detail">{topAgent.count} tasks</div>
+              </div>
+            </div>
+            
+            <div className="insight-card">
+              <div className="insight-icon">📊</div>
+              <div className="insight-content">
+                <div className="insight-label">Active Contributors</div>
+                <div className="insight-value">{Object.keys(ownerStats).length}</div>
+                <div className="insight-detail">Team size</div>
+              </div>
+            </div>
+            
+            <div className="insight-card">
+              <div className="insight-icon">⚡</div>
+              <div className="insight-content">
+                <div className="insight-label">Pending Tasks</div>
+                <div className="insight-value">{counts.toDo + counts.progress}</div>
+                <div className="insight-detail">To complete</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Contribution Activity Chart */}
+        <div className="contribution-section">
+          <h2 className="contribution-title">📊 Activity Timeline (Last 30 Days)</h2>
+          <div className="activity-chart-wrapper">
+            <div className="activity-chart-container">
+              <Line data={activityChartData} options={activityChartOptions} />
+            </div>
+          </div>
+        </div>
+
+        {/* Contribution Heatmap */}
+        <div className="contribution-section">
+          <h2 className="contribution-title">🔥 Contribution Heatmap</h2>
+          <div className="heatmap-wrapper">
+            <div className="heatmap-container">
+              <div className="heatmap-legend">
+                <span className="heatmap-label">Less</span>
+                <div className="heatmap-scale">
+                  <div className="heatmap-box" style={{ opacity: 0.1 }}></div>
+                  <div className="heatmap-box" style={{ opacity: 0.4 }}></div>
+                  <div className="heatmap-box" style={{ opacity: 0.7 }}></div>
+                  <div className="heatmap-box" style={{ opacity: 1 }}></div>
+                </div>
+                <span className="heatmap-label">More</span>
+              </div>
+
+              <div className="heatmap-data">
+                {Object.entries(contributionData.ownerDailyActivity).length > 0 ? (
+                  Object.entries(contributionData.ownerDailyActivity).map(([owner, dailyData]) => (
+                    <div key={owner} className="heatmap-row">
+                      <div className="heatmap-owner">{owner}</div>
+                      <div className="heatmap-cells">
+                        {contributionData.dailyActivity.map((day) => {
+                          const count = dailyData[day.date] || 0;
+                          const maxCount = Math.max(1, Math.max(...Object.values(dailyData)));
+                          const intensity = maxCount > 0 ? count / maxCount : 0;
+                          
+                          return (
+                            <div
+                              key={day.date}
+                              className="heatmap-cell"
+                              style={{
+                                backgroundColor: `rgba(201, 181, 156, ${intensity})`,
+                                borderColor: intensity > 0 ? '#999' : '#ddd'
+                              }}
+                              title={`${owner} - ${day.date}: ${count} task${count !== 1 ? 's' : ''}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="empty-state">No contribution data available</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="back-btn-wrap">
           <button className="back" onClick={() => navigate('/')}>
             ← Back to main page
@@ -262,22 +503,22 @@ const Dashboard = () => {
           <span className="close-btn" onClick={() => setIsSidebarOpen(false)}>×</span>
           
           <div className="filter-section">
-            <h3>Repository</h3>
+            <h3>Task Owner</h3>
             <input
               type="text"
               placeholder="Search"
-              value={repoSearch}
-              onChange={(e) => setRepoSearch(e.target.value)}
+              value={ownerSearch}
+              onChange={(e) => setOwnerSearch(e.target.value)}
             />
             <div className="scrollable">
-              {filteredRepos.map(repo => (
+              {filteredOwners.map(owner => (
                 <button
-                  key={repo}
-                  value={repo}
-                  className={selectedFilters.repository.has(repo) ? 'selected' : ''}
-                  onClick={() => handleFilterToggle('repository', repo)}
+                  key={owner}
+                  value={owner}
+                  className={selectedFilters.taskOwner.has(owner) ? 'selected' : ''}
+                  onClick={() => handleFilterToggle('taskOwner', owner)}
                 >
-                  {repo}
+                  {owner}
                 </button>
               ))}
             </div>
