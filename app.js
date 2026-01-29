@@ -100,6 +100,30 @@ app.post("/ai/openai/stream", OpenAIController.streamResponse);
 app.post("/ai/openrouter/generate", OpenRouterController.generateResponse);
 app.post("/ai/openrouter/process-task", OpenRouterController.processTask);
 
+// ===== USERS LIST (for Dashboard owner names) =====
+const admin = require("firebase-admin");
+const db = admin.firestore();
+
+app.get("/users", async (req, res) => {
+  try {
+    const snap = await db.collection("user").get();
+
+    const users = snap.docs.map(doc => {
+      const data = doc.data();
+      return {
+        githubId: String(data.githubId || doc.id),
+        githubName: String(data.githubName || "")
+      };
+    }).filter(u => u.githubName);
+
+    res.json(users);
+  } catch (err) {
+    console.error("Failed to load users:", err);
+    res.status(500).json({ error: "Failed to load users" });
+  }
+});
+
+
 // ----------------------------------------------------
 // (D) VITE MIDDLEWARE (DEV) - BEFORE static
 // ----------------------------------------------------
@@ -139,14 +163,16 @@ async function startServer() {
 
     app.use(async (req, res, next) => {
       // Don't swallow API/login routes
-      if (
-        req.path.startsWith("/github") ||
-        req.path.startsWith("/backlog") ||
-        req.path.startsWith("/ai") ||
-        req.path.startsWith("/login")
-      ) {
-        return next();
-      }
+    if (
+     req.path.startsWith("/github") ||
+     req.path.startsWith("/backlog") ||
+     req.path.startsWith("/boards") ||
+     req.path.startsWith("/ai") ||
+     req.path.startsWith("/login")
+   ) {
+    return next();
+    }
+
 
       try {
         const vite = globalThis.vite;
@@ -185,10 +211,40 @@ async function startServer() {
 
   const server = http.createServer(app);
 
+  // --- Socket.IO ---
+  const { Server } = require("socket.io");
+  const io = new Server(server, {
+    cors: {
+      origin: [
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "http://localhost:5504",
+        "http://127.0.0.1:5504",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+      ],
+      credentials: true,
+    },
+  });
+
+  app.set("io", io);
+
+  io.on("connection", (socket) => {
+    socket.on("joinBoard", (boardId) => {
+      if (!boardId) return;
+      socket.join(`board:${boardId}`);
+    });
+
+    socket.on("leaveBoard", (boardId) => {
+      if (!boardId) return;
+      socket.leave(`board:${boardId}`);
+    });
+  });
+
   server.listen(port, () => {
     console.log(`Server running on port ${port}`);
-    console.log(`Login page: http://localhost:${port}/login`);
-    console.log(`Main app:    http://localhost:${port}/`);
   });
 }
 

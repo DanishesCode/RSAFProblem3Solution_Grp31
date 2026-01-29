@@ -3,6 +3,19 @@ const { db, admin } = require("../firebaseAdmin");
 
 const now = () => admin.firestore.FieldValue.serverTimestamp();
 
+/**
+ * Safely extract a timestamp (ms) from Firestore Timestamp or {_seconds}
+ */
+function getTime(ts) {
+  if (ts && typeof ts.toMillis === "function") {
+    return ts.toMillis();
+  }
+  if (ts && typeof ts._seconds === "number") {
+    return ts._seconds * 1000;
+  }
+  return 0;
+}
+
 async function createBoard({ name, repo, ownerId, type = "personal", memberIds = [] }) {
   const boardRef = db.collection("boards").doc();
 
@@ -10,7 +23,7 @@ async function createBoard({ name, repo, ownerId, type = "personal", memberIds =
 
   const members =
     safeType === "collab"
-      ? Array.from(new Set([ownerId, ...(memberIds || [])])).filter(Boolean)
+      ? Array.from(new Set([ownerId].concat(memberIds || []))).filter(Boolean)
       : [ownerId];
 
   const data = {
@@ -45,7 +58,6 @@ async function listBoardsForUser(userId) {
 
 async function listCollabBoardsForUser(userId) {
   try {
-    // Try query with both filters (requires composite index)
     const snap = await db
       .collection("boards")
       .where("memberIds", "array-contains", userId)
@@ -55,58 +67,42 @@ async function listCollabBoardsForUser(userId) {
 
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   } catch (error) {
-    // Fallback: fetch all user boards and filter by type in JavaScript
-    const isIndexError = 
-      error.code === 9 || 
-      error.code === 'FAILED_PRECONDITION' ||
-      error.message?.includes("index") ||
-      error.message?.includes("requires an index");
-    
-    if (isIndexError) {
-      console.warn("[boardModel] Composite index missing for collab boards, using fallback filter");
-      try {
-        try {
-          const snap = await db
-            .collection("boards")
-            .where("memberIds", "array-contains", userId)
-            .orderBy("updatedAt", "desc")
-            .get();
+    const msg = error && error.message ? error.message : "";
+    const isIndexError =
+      error.code === 9 ||
+      error.code === "FAILED_PRECONDITION" ||
+      msg.includes("index") ||
+      msg.includes("requires an index");
 
-          const allBoards = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          const collabBoards = allBoards.filter((board) => board.type === "collab");
-          collabBoards.sort((a, b) => {
-            const aTime = a.updatedAt?.toMillis?.() || a.updatedAt?._seconds || 0;
-            const bTime = b.updatedAt?.toMillis?.() || b.updatedAt?._seconds || 0;
-            return bTime - aTime;
-          });
-          return collabBoards;
-        } catch (orderByError) {
-          const snap = await db
-            .collection("boards")
-            .where("memberIds", "array-contains", userId)
-            .get();
+    if (!isIndexError) throw error;
 
-          const allBoards = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          const collabBoards = allBoards.filter((board) => board.type === "collab");
-          collabBoards.sort((a, b) => {
-            const aTime = a.updatedAt?.toMillis?.() || a.updatedAt?._seconds || a.createdAt?.toMillis?.() || a.createdAt?._seconds || 0;
-            const bTime = b.updatedAt?.toMillis?.() || b.updatedAt?._seconds || b.createdAt?.toMillis?.() || b.createdAt?._seconds || 0;
-            return bTime - aTime;
-          });
-          return collabBoards;
-        }
-      } catch (fallbackError) {
-        console.error("[boardModel] All fallback queries failed:", fallbackError);
-        throw fallbackError;
-      }
+    console.warn("[boardModel] Missing index for collab boards, using fallback");
+
+    try {
+      const snap = await db
+        .collection("boards")
+        .where("memberIds", "array-contains", userId)
+        .get();
+
+      const allBoards = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const collabBoards = allBoards.filter((b) => b.type === "collab");
+
+      collabBoards.sort((a, b) => {
+        const aTime = getTime(a.updatedAt) || getTime(a.createdAt);
+        const bTime = getTime(b.updatedAt) || getTime(b.createdAt);
+        return bTime - aTime;
+      });
+
+      return collabBoards;
+    } catch (fallbackError) {
+      console.error("[boardModel] Collab fallback failed:", fallbackError);
+      throw fallbackError;
     }
-    throw error;
   }
 }
 
 async function listPersonalBoardsForUser(userId) {
   try {
-    // Try query with both filters (requires composite index)
     const snap = await db
       .collection("boards")
       .where("memberIds", "array-contains", userId)
@@ -116,62 +112,37 @@ async function listPersonalBoardsForUser(userId) {
 
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   } catch (error) {
-    // Fallback: fetch all user boards and filter by type in JavaScript
-    // This happens if composite index doesn't exist yet
-    // Firestore error codes: 9 = FAILED_PRECONDITION (index needed)
-    const isIndexError = 
-      error.code === 9 || 
-      error.code === 'FAILED_PRECONDITION' ||
-      error.message?.includes("index") ||
-      error.message?.includes("requires an index");
-    
-    if (isIndexError) {
-      console.warn("[boardModel] Composite index missing, using fallback filter. Error:", error.message);
-      try {
-        // Fallback 1: Try with orderBy on memberIds query
-        try {
-          const snap = await db
-            .collection("boards")
-            .where("memberIds", "array-contains", userId)
-            .orderBy("updatedAt", "desc")
-            .get();
+    const msg = error && error.message ? error.message : "";
+    const isIndexError =
+      error.code === 9 ||
+      error.code === "FAILED_PRECONDITION" ||
+      msg.includes("index") ||
+      msg.includes("requires an index");
 
-          const allBoards = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          const personalBoards = allBoards.filter((board) => board.type === "personal");
-          // Sort by updatedAt manually if available
-          personalBoards.sort((a, b) => {
-            const aTime = a.updatedAt?.toMillis?.() || a.updatedAt?._seconds || 0;
-            const bTime = b.updatedAt?.toMillis?.() || b.updatedAt?._seconds || 0;
-            return bTime - aTime;
-          });
-          console.log(`[boardModel] Fallback: Found ${allBoards.length} total boards, ${personalBoards.length} personal`);
-          return personalBoards;
-        } catch (orderByError) {
-          // Fallback 2: No orderBy, just filter
-          console.warn("[boardModel] orderBy also failed, using simple filter");
-          const snap = await db
-            .collection("boards")
-            .where("memberIds", "array-contains", userId)
-            .get();
+    if (!isIndexError) throw error;
 
-          const allBoards = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          const personalBoards = allBoards.filter((board) => board.type === "personal");
-          // Sort by updatedAt manually if available
-          personalBoards.sort((a, b) => {
-            const aTime = a.updatedAt?.toMillis?.() || a.updatedAt?._seconds || a.createdAt?.toMillis?.() || a.createdAt?._seconds || 0;
-            const bTime = b.updatedAt?.toMillis?.() || b.updatedAt?._seconds || b.createdAt?.toMillis?.() || b.createdAt?._seconds || 0;
-            return bTime - aTime;
-          });
-          console.log(`[boardModel] Simple filter: Found ${allBoards.length} total boards, ${personalBoards.length} personal`);
-          return personalBoards;
-        }
-      } catch (fallbackError) {
-        console.error("[boardModel] All fallback queries failed:", fallbackError);
-        throw fallbackError;
-      }
+    console.warn("[boardModel] Missing index for personal boards, using fallback");
+
+    try {
+      const snap = await db
+        .collection("boards")
+        .where("memberIds", "array-contains", userId)
+        .get();
+
+      const allBoards = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const personalBoards = allBoards.filter((b) => b.type === "personal");
+
+      personalBoards.sort((a, b) => {
+        const aTime = getTime(a.updatedAt) || getTime(a.createdAt);
+        const bTime = getTime(b.updatedAt) || getTime(b.createdAt);
+        return bTime - aTime;
+      });
+
+      return personalBoards;
+    } catch (fallbackError) {
+      console.error("[boardModel] Personal fallback failed:", fallbackError);
+      throw fallbackError;
     }
-    console.error("[boardModel] Query failed with error:", error);
-    throw error;
   }
 }
 
@@ -189,20 +160,22 @@ async function deleteBoard(boardId) {
 
 async function addMembersToBoard(boardId, memberIds) {
   const ref = db.collection("boards").doc(boardId);
-  const board = await ref.get();
-  
-  if (!board.exists) {
+  const snap = await ref.get();
+
+  if (!snap.exists) {
     throw new Error("Board not found");
   }
-  
-  const currentMemberIds = board.data().memberIds || [];
-  const newMemberIds = Array.from(new Set([...currentMemberIds, ...memberIds])).filter(Boolean);
-  
+
+  const currentMemberIds = snap.data().memberIds || [];
+  const newMemberIds = Array.from(
+    new Set(currentMemberIds.concat(memberIds))
+  ).filter(Boolean);
+
   await ref.update({
     memberIds: newMemberIds,
     updatedAt: now(),
   });
-  
+
   const updated = await ref.get();
   return { id: updated.id, ...updated.data() };
 }

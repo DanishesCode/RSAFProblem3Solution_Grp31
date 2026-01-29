@@ -106,6 +106,11 @@ async function createBacklog(req, res) {
     }
 
     const created = await taskModel.createBacklogItem(payload);
+    const io = req.app.get("io");
+    if (io && payload.boardId) {
+    io.to(`board:${payload.boardId}`).emit("taskCreated", created);
+}
+
 
     return res.status(201).json(created);
   } catch (error) {
@@ -135,6 +140,15 @@ async function updateStatus(req, res) {
     }
 
     const updated = await taskModel.updateBacklogItemStatus(id, status);
+    const io = req.app.get("io");
+    if (io && updated?.boardId) {
+  io.to(`board:${updated.boardId}`).emit("taskStatusUpdated", {
+    taskId: updated.taskId || updated.taskid || id,
+    status: updated.status,
+    updated,
+  });
+}
+
 
     if (!updated) {
       return res.status(404).json({ error: "Task not found" });
@@ -166,6 +180,10 @@ async function updateAgentOutput(req, res) {
 
     if (!updated) {
       return res.status(404).json({ error: "Task not found" });
+    }
+    const io = req.app.get("io");
+    if (io && updated?.boardId) {
+    io.to(`board:${updated.boardId}`).emit("taskUpdated", updated);
     }
 
     return res.status(200).json(updated);
@@ -213,6 +231,11 @@ async function updateBacklog(req, res) {
     };
 
     const updated = await taskModel.updateBacklogItem(id, payload);
+    const io = req.app.get("io");
+if (io && updated?.boardId) {
+  io.to(`board:${updated.boardId}`).emit("taskUpdated", updated);
+}
+
 
     if (!updated) {
       return res.status(404).json({ error: "Task not found" });
@@ -241,6 +264,13 @@ async function deleteBacklog(req, res) {
     }
 
     const deleted = await taskModel.deleteBacklogItem(id);
+    const io = req.app.get("io");
+if (io && deleted?.boardId) {
+  io.to(`board:${deleted.boardId}`).emit("taskDeleted", {
+    taskId: deleted.taskId || deleted.taskid || id,
+  });
+}
+
 
     if (!deleted) {
       return res.status(404).json({ error: "Task not found" });
