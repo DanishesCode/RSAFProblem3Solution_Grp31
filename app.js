@@ -100,6 +100,30 @@ app.post("/ai/openai/stream", OpenAIController.streamResponse);
 app.post("/ai/openrouter/generate", OpenRouterController.generateResponse);
 app.post("/ai/openrouter/process-task", OpenRouterController.processTask);
 
+// ===== USERS LIST (for Dashboard owner names) =====
+const admin = require("firebase-admin");
+const db = admin.firestore();
+
+app.get("/users", async (req, res) => {
+  try {
+    const snap = await db.collection("user").get();
+
+    const users = snap.docs.map(doc => {
+      const data = doc.data();
+      return {
+        githubId: String(data.githubId || doc.id),
+        githubName: String(data.githubName || "")
+      };
+    }).filter(u => u.githubName);
+
+    res.json(users);
+  } catch (err) {
+    console.error("Failed to load users:", err);
+    res.status(500).json({ error: "Failed to load users" });
+  }
+});
+
+
 // ----------------------------------------------------
 // (D) VITE MIDDLEWARE (DEV) - BEFORE static
 // ----------------------------------------------------

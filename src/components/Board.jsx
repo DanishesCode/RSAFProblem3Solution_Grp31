@@ -288,52 +288,53 @@ useEffect(() => {
   socket.emit("joinBoard", boardId);
 
   // --- listeners ---
-  const onTaskCreated = (created) => {
-    // IMPORTANT: de-dupe to prevent “double task”
-    const incomingId = created.taskId || created.taskid;
-    setTasks((prev) => {
-      if (prev.some((t) => t.taskid === incomingId)) return prev;
-      return [
-        ...prev,
-        {
-          taskid: incomingId,
-          title: created.title || "",
-          prompt: created.prompt || "",
-          description: created.description || "",
-          priority: created.priority || "medium",
-          status: created.status || "toDo",
-          repo: created.repo || "",
-          ownerId: created.ownerId || "",
-          boardId: created.boardId || "",
-          assignedAgent: created.agentName || "",
-          agentName: created.agentName || "",
-          agentOutput: created.agentOutput || "",
-          requirements: created.requirement
-            ? String(created.requirement).split(", ").filter(Boolean)
-            : (created.requirements || []),
-          progress: 0,
-        },
-      ];
-    });
-  };
+const onTaskCreated = (created) => {
+  // Normalize the task ID field
+  const normalizedTask = normalizeIncoming(created);
+  const incomingId = normalizedTask.taskid;
 
-  const onTaskUpdated = (updated) => {
-    const id = updated.taskId || updated.taskid;
-    setTasks((prev) =>
-      prev.map((t) => (t.taskid === id ? { ...t, ...normalizeIncoming(updated) } : t))
-    );
-  };
+  setTasks(prev => {
+    if (prev.some(t => t.taskid === incomingId)) return prev;
+    return [...prev, normalizedTask]; // Use normalized task instead of created
+  });
 
-  const onTaskStatusUpdated = ({ taskId, status, updated }) => {
-    const id = taskId || updated?.taskId || updated?.taskid;
-    setTasks((prev) =>
-      prev.map((t) => (t.taskid === id ? { ...t, status } : t))
-    );
-  };
+  pushSocketActivity(normalizedTask, "Created");
+};
 
-  const onTaskDeleted = ({ taskId }) => {
-    setTasks((prev) => prev.filter((t) => t.taskid !== taskId));
-  };
+const onTaskUpdated = (updated) => {
+  const id = updated.taskId || updated.taskid;
+  setTasks(prev =>
+    prev.map(t => t.taskid === id ? { ...t, ...normalizeIncoming(updated) } : t)
+  );
+};
+
+
+
+const onTaskStatusUpdated = ({ taskId, status, updated }) => {
+  const id = taskId || updated?.taskId || updated?.taskid;
+
+  setTasks(prev =>
+    prev.map(t =>
+      t.taskid === id ? { ...t, status, ...(updated || {}) } : t
+    )
+  );
+
+  pushSocketActivity(
+    updated || { taskid: id, status },
+    status
+  );
+};
+
+
+
+const onTaskDeleted = ({ taskId }) => {
+  setTasks(prev => {
+    const deleted = prev.find(t => t.taskid === taskId);
+    if (deleted) pushSocketActivity(deleted, "Deleted");
+    return prev.filter(t => t.taskid !== taskId);
+  });
+};
+
 
   const onAgentOutputUpdated = ({ taskId, agentOutput }) => {
     setTasks((prev) =>
@@ -751,6 +752,28 @@ const handleCreateTask = async (taskData) => {
       default: return 'Unknown';
     }
   };
+const pushSocketActivity = useCallback((task, statusOverride) => {
+  setActivityLogs(prev => [
+    {
+      title: task.title || "Untitled",
+      agent: task.agentName || task.assignedAgent || "—",
+      status:
+        statusOverride ||
+        (task.status === "toDo" ? "To Do" :
+         task.status === "progress" ? "In Progress" :
+         task.status === "review" ? "In Review" :
+         task.status === "done" ? "Done" :
+         task.status === "cancel" ? "Cancelled" :
+         task.status),
+      priority: task.priority || "medium",
+      repo: task.repo || "—",
+      percent: task.progress ?? 0,
+      timestamp: Date.now()
+    },
+    ...prev
+  ]);
+}, []);
+
 
   // Handle inviting members
   const handleInviteMember = async (githubId) => {
