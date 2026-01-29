@@ -70,6 +70,9 @@ export default function Dashboard() {
     aiAgent: new Set(),
     priority: new Set(),
   });
+  const [filterText, setFilterText] = useState('None');
+  const [repoSearch, setRepoSearch] = useState('');
+  const [agentStats, setAgentStats] = useState({});
 
   /* =======================
      Initial load
@@ -187,12 +190,34 @@ export default function Dashboard() {
       else if (l.status === "review") c.review++;
       else if (l.status === "done") c.done++;
       else if (l.status === "cancel") c.cancel++;
+    const agents = {};
+    const priorities = { high: 0, medium: 0, low: 0 };
+    
+    filteredLogs.forEach(log => {
+      if (log.status === 'toDo') c.toDo++;
+      else if (log.status === 'progress') c.progress++;
+      else if (log.status === 'review') c.review++;
+      else if (log.status === 'done') c.done++;
+      else if (log.status === 'cancel') c.cancel++;
+      
+      const agentName = log.assignedAgent || log.agentName || 'Unknown';
+      agents[agentName] = (agents[agentName] || 0) + 1;
+      
+      if (log.priority === 'high') priorities.high++;
+      else if (log.priority === 'medium') priorities.medium++;
+      else if (log.priority === 'low') priorities.low++;
     });
+    
+    setAgentStats(agents);
+    c.priorities = priorities;
     return c;
   }, [filteredLogs]);
 
   const totalCount =
     counts.toDo + counts.progress + counts.review + counts.done + counts.cancel;
+  const totalCount = counts.toDo + counts.progress + counts.review + counts.done + counts.cancel;
+  const completionRate = totalCount > 0 ? Math.round((counts.done / totalCount) * 100) : 0;
+  const completedTasks = counts.done + counts.cancel;
 
   /* =======================
      Chart
@@ -285,6 +310,13 @@ export default function Dashboard() {
         <div className="dash-header-center">
           <h1 className="dash-title">Dashboard</h1>
           <div className="dash-subtitle">Filters: {filterText}</div>
+      <header className="top">
+        <button className="filters" onClick={() => setIsSidebarOpen(true)}>
+          ⚙️ Filters
+        </button>
+        <div className="title-wrap">
+          <h1 className="title">Task Dashboard</h1>
+          <div className="subtitle">📊 {filterText}</div>
         </div>
 
         <div className="dash-header-right" />
@@ -312,7 +344,27 @@ export default function Dashboard() {
               <div className="legend-item"><span className="swatch swatch-done"/> Done</div>
               <div className="legend-item"><span className="swatch swatch-cancel"/> Cancelled</div>
             </div>
+      <main className="main">
+        {/* Summary Stats */}
+        <div className="summary-stats">
+          <div className="stat-card stat-total">
+            <div className="stat-value">{totalCount}</div>
+            <div className="stat-label">Total Tasks</div>
           </div>
+          <div className="stat-card stat-done">
+            <div className="stat-value">{counts.done}</div>
+            <div className="stat-label">Completed</div>
+            <div className="stat-rate">{completionRate}% Done</div>
+          </div>
+          <div className="stat-card stat-inprogress">
+            <div className="stat-value">{counts.progress}</div>
+            <div className="stat-label">In Progress</div>
+          </div>
+          <div className="stat-card stat-urgent">
+            <div className="stat-value">{counts.priorities?.high || 0}</div>
+            <div className="stat-label">High Priority</div>
+          </div>
+        </div>
 
           {/* RIGHT */}
           <div className="stats-grid-small">
@@ -351,6 +403,94 @@ export default function Dashboard() {
         <div className={`filter-sidebar ${isSidebarOpen ? "open" : ""}`}>
           <span className="close-btn" onClick={() => setIsSidebarOpen(false)}>X</span>
 
+        {/* Main Chart & Details Section */}
+        <div className="chart-area">
+          <div className="chart-wrapper">
+            <div id="chart-container">
+              <Doughnut data={chartData} options={chartOptions} />
+              <div className="center-label">
+                <div className="count">{totalCount}</div>
+                <div className="count-sub">Total Tasks</div>
+              </div>
+            </div>
+
+            <div className="legend">
+              <h3 className="legend-title">Status Breakdown</h3>
+              <div className="legend-item">
+                <span className="swatch swatch-todo"></span>
+                <span className="legend-text">To-Do</span>
+                <span className="legend-count">{counts.toDo}</span>
+              </div>
+              <div className="legend-item">
+                <span className="swatch swatch-progress"></span>
+                <span className="legend-text">In Progress</span>
+                <span className="legend-count">{counts.progress}</span>
+              </div>
+              <div className="legend-item">
+                <span className="swatch swatch-review"></span>
+                <span className="legend-text">In Review</span>
+                <span className="legend-count">{counts.review}</span>
+              </div>
+              <div className="legend-item">
+                <span className="swatch swatch-done"></span>
+                <span className="legend-text">Done</span>
+                <span className="legend-count">{counts.done}</span>
+              </div>
+              <div className="legend-item">
+                <span className="swatch swatch-cancel"></span>
+                <span className="legend-text">Cancelled</span>
+                <span className="legend-count">{counts.cancel}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Agent & Priority Stats */}
+          <div className="details-section">
+            <div className="detail-card">
+              <h3 className="detail-title">📌 AI Agent Distribution</h3>
+              <div className="agent-list">
+                {Object.entries(agentStats).length > 0 ? (
+                  Object.entries(agentStats).map(([agent, count]) => (
+                    <div key={agent} className="agent-item">
+                      <span className="agent-name">{agent}</span>
+                      <span className="agent-count">{count}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="empty-state">No tasks assigned</p>
+                )}
+              </div>
+            </div>
+
+            <div className="detail-card">
+              <h3 className="detail-title">📈 Priority Distribution</h3>
+              <div className="priority-list">
+                <div className="priority-item high">
+                  <span>🔴 High</span>
+                  <span className="priority-count">{counts.priorities?.high || 0}</span>
+                </div>
+                <div className="priority-item medium">
+                  <span>🟡 Medium</span>
+                  <span className="priority-count">{counts.priorities?.medium || 0}</span>
+                </div>
+                <div className="priority-item low">
+                  <span>🟢 Low</span>
+                  <span className="priority-count">{counts.priorities?.low || 0}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="back-btn-wrap">
+          <button className="back" onClick={() => navigate('/')}>
+            ← Back to main page
+          </button>
+        </div>
+
+        <div className={`filter-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+          <span className="close-btn" onClick={() => setIsSidebarOpen(false)}>×</span>
+          
           <div className="filter-section">
             <h3>Task Owner</h3>
             <input
@@ -398,7 +538,7 @@ export default function Dashboard() {
           </div>
 
           <button className="apply-btn" onClick={handleApplyFilters}>
-            Apply
+            Apply Filters
           </button>
         </div>
       </main>
