@@ -148,8 +148,22 @@ async function getBacklogsByUserId(userId) {
       .where("ownerId", "==", String(userId))
       .get();
 
-    const results = snap.docs.map((doc) => {
+    const results = await Promise.all(snap.docs.map(async (doc) => {
       const data = doc.data();
+      
+      // Fetch owner's GitHub name
+      let ownerName = "";
+      try {
+        const userDoc = await db.collection("users").doc(String(data.ownerId)).get();
+        if (userDoc.exists) {
+          ownerName = userDoc.data().githubName || String(data.ownerId);
+        } else {
+          ownerName = String(data.ownerId);
+        }
+      } catch (err) {
+        ownerName = String(data.ownerId);
+      }
+      
       const task = { 
         taskId: doc.id,
         title: data.title || "",
@@ -159,6 +173,7 @@ async function getBacklogsByUserId(userId) {
         status: data.status || "toDo",
         repo: data.repo || "",
         ownerId: data.ownerId || "",
+        ownerName: ownerName,
         boardId: data.boardId || "",
         agentName: data.agentName || "",
         agentOutput: data.agentOutput || "",
@@ -168,7 +183,7 @@ async function getBacklogsByUserId(userId) {
       };
 
       return task;
-    });
+    }));
 
     return results;
   } catch (err) {
@@ -184,8 +199,22 @@ async function getBacklogsByBoardId(boardId) {
       .where("boardId", "==", String(boardId))
       .get();
 
-    const results = snap.docs.map((doc) => {
+    const results = await Promise.all(snap.docs.map(async (doc) => {
       const data = doc.data();
+      
+      // Fetch owner's GitHub name
+      let ownerName = "";
+      try {
+        const userDoc = await db.collection("users").doc(String(data.ownerId)).get();
+        if (userDoc.exists) {
+          ownerName = userDoc.data().githubName || String(data.ownerId);
+        } else {
+          ownerName = String(data.ownerId);
+        }
+      } catch (err) {
+        ownerName = String(data.ownerId);
+      }
+      
       const task = { 
         taskId: doc.id,
         title: data.title || "",
@@ -195,6 +224,7 @@ async function getBacklogsByBoardId(boardId) {
         status: data.status || "toDo",
         repo: data.repo || "",
         ownerId: data.ownerId || "",
+        ownerName: ownerName,
         boardId: data.boardId || "",
         agentName: data.agentName || "",
         agentOutput: data.agentOutput || "",
@@ -204,7 +234,7 @@ async function getBacklogsByBoardId(boardId) {
       };
 
       return task;
-    });
+    }));
 
     return results;
   } catch (err) {

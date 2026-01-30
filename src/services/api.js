@@ -185,6 +185,7 @@ export async function initializeLogs(userId, boardId = null) {
         status: normalizeStatus(log.status || "toDo"),
         repo: log.repo || "",
         ownerId: log.ownerId || "",
+        ownerName: log.ownerName || log.ownerId || "",
         boardId: log.boardId || "",
         agentName: log.agentName || "",
         agentOutput: log.agentOutput || "",

@@ -19,6 +19,7 @@ const AppRouter = () => {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard/:boardId" element={<Dashboard />} />
         <Route path="/github/callback" element={<GitHubCallback />} />
         <Route path="/myboards" element={<MyBoards />} />
         <Route path="/board" element={<Board />} />

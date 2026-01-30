@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, LineElement, PointElement, LinearScale, CategoryScale } from 'chart.js';
 import { Doughnut, Line } from 'react-chartjs-2';
 import { initializeLogs } from '../services/api';
@@ -10,6 +10,7 @@ ChartJS.register(ArcElement, Tooltip, Legend, LineElement, PointElement, LinearS
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { boardId } = useParams();
   const [logs, setLogs] = useState([]);
   const [filteredLogs, setFilteredLogs] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -31,7 +32,7 @@ const Dashboard = () => {
           navigate('/login', { replace: true });
           return;
         }
-        const userLogs = await initializeLogs(userId);
+        const userLogs = await initializeLogs(userId, boardId);
         setLogs(userLogs);
         setFilteredLogs(userLogs);
       } catch (error) {
@@ -40,7 +41,7 @@ const Dashboard = () => {
     };
     loadLogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+  }, [boardId]); // Re-run if boardId changes
 
   const repos = React.useMemo(() => {
     const reposString = localStorage.getItem('repos');
@@ -48,19 +49,21 @@ const Dashboard = () => {
   }, []);
 
   const owners = React.useMemo(() => {
-    const ownerSet = new Set();
+    const ownerMap = new Map(); // Store { ownerId: ownerName } mapping
     logs.forEach(log => {
       if (log.ownerId) {
-        ownerSet.add(log.ownerId);
+        if (!ownerMap.has(log.ownerId)) {
+          ownerMap.set(log.ownerId, log.ownerName || log.ownerId);
+        }
       }
     });
-    return Array.from(ownerSet).sort();
+    return Array.from(ownerMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
   }, [logs]);
 
   const filteredOwners = React.useMemo(() => {
     if (!ownerSearch) return owners;
-    return owners.filter(owner => 
-      owner.toLowerCase().includes(ownerSearch.toLowerCase())
+    return owners.filter(([id, name]) => 
+      name.toLowerCase().includes(ownerSearch.toLowerCase())
     );
   }, [owners, ownerSearch]);
 
@@ -253,6 +256,9 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container">
       <header className="top">
+        <button className="back-btn" onClick={() => navigate(-1)}>
+          ← Back
+        </button>
         <button className="filters" onClick={() => setIsSidebarOpen(true)}>
           ⚙️ Filters
         </button>
@@ -511,14 +517,14 @@ const Dashboard = () => {
               onChange={(e) => setOwnerSearch(e.target.value)}
             />
             <div className="scrollable">
-              {filteredOwners.map(owner => (
+              {filteredOwners.map(([ownerId, ownerName]) => (
                 <button
-                  key={owner}
-                  value={owner}
-                  className={selectedFilters.taskOwner.has(owner) ? 'selected' : ''}
-                  onClick={() => handleFilterToggle('taskOwner', owner)}
+                  key={ownerId}
+                  value={ownerId}
+                  className={selectedFilters.taskOwner.has(ownerId) ? 'selected' : ''}
+                  onClick={() => handleFilterToggle('taskOwner', ownerId)}
                 >
-                  {owner}
+                  {ownerName}
                 </button>
               ))}
             </div>
