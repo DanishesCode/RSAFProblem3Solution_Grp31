@@ -12,7 +12,8 @@ const Header = ({
   onFilterChange,
   tasks,
   repos,
-  onSettingsClick
+  onSettingsClick,
+  boardId
 }) => {
   const navigate = useNavigate();
 
@@ -39,7 +40,7 @@ const Header = ({
           <button className="btn-filter" onClick={onFilterClick}>Filter</button>
           <button 
             className="btn-dashboard" 
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(boardId ? `/dashboard/${boardId}` : '/dashboard')}
           >
             Dashboard
           </button>

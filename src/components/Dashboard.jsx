@@ -14,6 +14,7 @@ const Dashboard = () => {
   const [logs, setLogs] = useState([]);
   const [filteredLogs, setFilteredLogs] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' or 'activity'
   const [selectedFilters, setSelectedFilters] = useState({
     taskOwner: new Set(),
     aiAgent: new Set(),
@@ -35,6 +36,13 @@ const Dashboard = () => {
         const userLogs = await initializeLogs(userId, boardId);
         setLogs(userLogs);
         setFilteredLogs(userLogs);
+        // Reset filters when board changes
+        setSelectedFilters({
+          taskOwner: new Set(),
+          aiAgent: new Set(),
+          priority: new Set()
+        });
+        setFilterText('None');
       } catch (error) {
         console.error('Error loading logs:', error);
       }
@@ -264,11 +272,14 @@ const Dashboard = () => {
         </button>
         <div className="title-wrap">
           <h1 className="title">Task Dashboard</h1>
-          <div className="subtitle">📊 {filterText}</div>
+          <div className="subtitle">📊 {filterText}{boardId ? ` | Board: ${boardId}` : ''}</div>
         </div>
       </header>
 
       <main className="main">
+        {/* OVERVIEW TAB */}
+        {activeTab === 'overview' && (
+        <>
         {/* Summary Stats */}
         <div className="summary-stats">
           <div className="stat-card stat-total">
@@ -438,6 +449,12 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+        </>
+        )}
+
+        {/* ACTIVITY TAB */}
+        {activeTab === 'activity' && (
+        <>
 
         {/* Contribution Activity Chart */}
         <div className="contribution-section">
@@ -498,6 +515,34 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Navigation Buttons */}
+        <div className="dashboard-nav">
+          {activeTab === 'overview' && (
+            <>
+              <button className="nav-btn nav-left" onClick={() => navigate(-1)}>
+                ← Back to Board
+              </button>
+              <button className="nav-btn nav-right" onClick={() => setActiveTab('activity')}>
+                Activity & Contribution →
+              </button>
+            </>
+          )}
+          {activeTab === 'activity' && (
+            <>
+              <div className="nav-buttons-left">
+                <button className="nav-btn nav-left" onClick={() => navigate(-1)}>
+                  ← Back to Board
+                </button>
+                <button className="nav-btn nav-secondary" onClick={() => setActiveTab('overview')}>
+                  ← Back to Overview
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+        </>
+        )}
 
         <div className="back-btn-wrap">
           <button className="back" onClick={() => navigate('/')}>
@@ -584,6 +629,9 @@ const Dashboard = () => {
             Apply Filters
           </button>
         </div>
+        </>
+        )}
+
       </main>
     </div>
   );

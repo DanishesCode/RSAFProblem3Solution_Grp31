@@ -942,6 +942,7 @@ const pushSocketActivity = useCallback((task, statusOverride) => {
         tasks={tasks}
         repos={repos}
         onSettingsClick={() => setIsSettingsOpen(true)}
+        boardId={boardId}
       />
       <AgentSection agents={agents} tasks={tasks} />
       <KanbanBoard
