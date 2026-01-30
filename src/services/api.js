@@ -4,9 +4,8 @@
 // Keep this for same-origin dev/prod (your Express + Vite middleware setup)
 const API_BASE_URL = "";
 
-/**
- * Firestore agent document IDs (from your screenshots)
- */
+
+
 export const AGENT_DOC_IDS = {
   DeepSeek: "PGqJh4Sr5mrFTFkRKAut",  // Previously Claude
   Gemma: "sSmp10vRDvPWvFooKv1t",      // Previously Gemini

@@ -61,7 +61,9 @@ async function addBoardMessage(boardId, { senderId, text }) {
 
 async function getBoardUnread(boardId, userId) {
   const readSnap = await boardReadStateRef(boardId, userId).get();
-  const lastReadAt = readSnap.exists ? readSnap.data()?.lastReadAt : null;
+const data = readSnap.exists ? readSnap.data() : null;
+const lastReadAt = data ? data.lastReadAt : null;
+
 
   // We only need a boolean (dot badge) to keep reads cheap.
   // Query: is there at least 1 message newer than lastReadAt?

@@ -102,8 +102,9 @@ async function sendOpenRouterPrompt(userPrompt, prePrompt = "", agentIdentifier 
 
     const choice = response.data.choices && response.data.choices[0];
     const content =
-      choice?.message?.content ||
-      choice?.delta?.content ||
+choice && choice.message && choice.message.content
+choice && choice.delta && choice.delta.content
+
       "";
 
     return content;
