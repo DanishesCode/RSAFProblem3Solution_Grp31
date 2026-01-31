@@ -541,7 +541,6 @@ const Dashboard = () => {
             </>
           )}
         </div>
-        )}
 
         <div className="back-btn-wrap">
           <button className="back" onClick={() => navigate('/')}>
