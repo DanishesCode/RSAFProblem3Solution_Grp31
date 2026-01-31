@@ -24,6 +24,7 @@ const Dashboard = () => {
   const [ownerSearch, setOwnerSearch] = useState('');
   const [agentStats, setAgentStats] = useState({});
   const [ownerStats, setOwnerStats] = useState({});
+  const [ownerNames, setOwnerNames] = useState({}); // ownerId -> GitHub display name (fetched when missing)
 
   useEffect(() => {
     const loadLogs = async () => {
@@ -50,6 +51,31 @@ const Dashboard = () => {
     loadLogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardId]); // Re-run if boardId changes
+
+  // Fetch GitHub names for owner IDs that only have ID (no name from logs)
+  useEffect(() => {
+    const apiBase = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:3000';
+    const uniqueOwnerIds = [...new Set((logs || []).map((log) => log.ownerId).filter(Boolean))];
+    let cancelled = false;
+    const fetched = {};
+    (async () => {
+      for (const ownerId of uniqueOwnerIds) {
+        if (cancelled) return;
+        const currentName = logs.find((l) => l.ownerId === ownerId)?.ownerName;
+        const looksLikeId = !currentName || currentName === String(ownerId) || /^\d+$/.test(String(currentName).trim());
+        if (!looksLikeId) continue;
+        try {
+          const res = await fetch(`${apiBase}/users/github/${encodeURIComponent(ownerId)}`);
+          if (!res.ok) continue;
+          const user = await res.json();
+          const name = user?.githubName || user?.login || user?.name;
+          if (name) fetched[ownerId] = name;
+        } catch (_) {}
+      }
+      if (!cancelled) setOwnerNames((prev) => ({ ...prev, ...fetched }));
+    })();
+    return () => { cancelled = true; };
+  }, [logs]);
 
   const repos = React.useMemo(() => {
     const reposString = localStorage.getItem('repos');
@@ -255,11 +281,18 @@ const Dashboard = () => {
 
   const chartOptions = {
     cutout: '60%',
+    responsive: true,
+    maintainAspectRatio: true,
     plugins: {
       legend: { display: false },
       tooltip: { enabled: true }
     }
   };
+
+  // Map ownerId -> display name (from logs or fetched from API)
+  const ownerIdToName = React.useMemo(() => new Map(owners), [owners]);
+  const getOwnerDisplayName = (ownerId) =>
+    ownerNames[ownerId] || ownerIdToName.get(ownerId) || ownerId || 'Unknown';
 
   return (
     <div className="dashboard-container">
@@ -358,9 +391,9 @@ const Dashboard = () => {
                 {Object.entries(ownerStats).length > 0 ? (
                   Object.entries(ownerStats)
                     .sort(([, a], [, b]) => b - a)
-                    .map(([owner, count]) => (
-                      <div key={owner} className="agent-item">
-                        <span className="agent-name">{owner}</span>
+                    .map(([ownerId, count]) => (
+                      <div key={ownerId} className="agent-item">
+                        <span className="agent-name">{getOwnerDisplayName(ownerId)}</span>
                         <span className="agent-count">{count}</span>
                       </div>
                     ))
@@ -416,7 +449,7 @@ const Dashboard = () => {
               <div className="insight-icon">👑</div>
               <div className="insight-content">
                 <div className="insight-label">Top Contributor</div>
-                <div className="insight-value">{topContributor.owner}</div>
+                <div className="insight-value">{getOwnerDisplayName(topContributor.owner)}</div>
                 <div className="insight-detail">{topContributor.count} tasks</div>
               </div>
             </div>
@@ -484,9 +517,9 @@ const Dashboard = () => {
 
               <div className="heatmap-data">
                 {Object.entries(contributionData.ownerDailyActivity).length > 0 ? (
-                  Object.entries(contributionData.ownerDailyActivity).map(([owner, dailyData]) => (
-                    <div key={owner} className="heatmap-row">
-                      <div className="heatmap-owner">{owner}</div>
+                  Object.entries(contributionData.ownerDailyActivity).map(([ownerId, dailyData]) => (
+                    <div key={ownerId} className="heatmap-row">
+                      <div className="heatmap-owner">{getOwnerDisplayName(ownerId)}</div>
                       <div className="heatmap-cells">
                         {contributionData.dailyActivity.map((day) => {
                           const count = dailyData[day.date] || 0;
@@ -501,7 +534,7 @@ const Dashboard = () => {
                                 backgroundColor: `rgba(201, 181, 156, ${intensity})`,
                                 borderColor: intensity > 0 ? '#999' : '#ddd'
                               }}
-                              title={`${owner} - ${day.date}: ${count} task${count !== 1 ? 's' : ''}`}
+                              title={`${getOwnerDisplayName(ownerId)} - ${day.date}: ${count} task${count !== 1 ? 's' : ''}`}
                             />
                           );
                         })}
