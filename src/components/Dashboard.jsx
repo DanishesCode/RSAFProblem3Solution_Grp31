@@ -300,9 +300,6 @@ const Dashboard = () => {
         <button className="back-btn" onClick={() => navigate(-1)}>
           ← Back
         </button>
-        <button className="filters" onClick={() => setIsSidebarOpen((open) => !open)}>
-          ⚙️ Filters
-        </button>
         <div className="title-wrap">
           <h1 className="title">Task Dashboard</h1>
           <div className="subtitle">📊 {filterText}{boardId ? ` | Board: ${boardId}` : ''}</div>
