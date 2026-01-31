@@ -300,7 +300,7 @@ const Dashboard = () => {
         <button className="back-btn" onClick={() => navigate(-1)}>
           ← Back
         </button>
-        <button className="filters" onClick={() => setIsSidebarOpen(true)}>
+        <button className="filters" onClick={() => setIsSidebarOpen((open) => !open)}>
           ⚙️ Filters
         </button>
         <div className="title-wrap">
@@ -581,7 +581,7 @@ const Dashboard = () => {
           </button>
         </div>
 
-        <div className={`filter-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+        <div className={`filter-sidebar ${isSidebarOpen ? 'open' : ''}`} role="dialog" aria-hidden={!isSidebarOpen}>
           <span className="close-btn" onClick={() => setIsSidebarOpen(false)}>×</span>
           
           <div className="filter-section">

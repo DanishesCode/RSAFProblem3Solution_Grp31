@@ -778,7 +778,7 @@
   background: var(--panel);
   padding: 25px 20px;
   box-sizing: border-box;
-  display: none;
+  display: flex;
   flex-direction: column;
   justify-content: flex-start;
   box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
@@ -788,14 +788,15 @@
   overflow-y: auto;
   transform: translateX(-100%);
   opacity: 0;
+  pointer-events: none;
   transition: transform 0.35s ease-out, opacity 0.35s ease-out;
-  z-index: 1000;
+  z-index: 2000;
 }
 
 .filter-sidebar.open {
-  display: flex;
   transform: translateX(0);
   opacity: 1;
+  pointer-events: auto;
 }
 
 .filter-sidebar .close-btn {
