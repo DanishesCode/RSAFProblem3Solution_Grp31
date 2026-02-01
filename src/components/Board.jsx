@@ -550,10 +550,10 @@ const handleCreateTask = async (taskData) => {
       setTasks(updatedTasks);
       updateAgentWorkload(updatedTasks);
       
-      // When task moves to "done", automatically push code to GitHub
+      // When task moves to "done", automatically push code to GitHub (with or without agent output)
       if (toStatus === 'done') {
         const latestTask = updatedTasks.find(t => t.taskid === taskId);
-        if (latestTask && latestTask.agentOutput && latestTask.repo) {
+        if (latestTask && latestTask.repo) {
           try {
             // Get owner's GitHub username
             const ownerResponse = await fetch(`http://localhost:3000/users/github/${latestTask.ownerId}`, {
@@ -579,9 +579,10 @@ const handleCreateTask = async (taskData) => {
               
               const branchName = `${sanitizedTitle}-${taskId}`.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
               
-              // Parse code output to extract file path or use default
+              // Use agent output if present, otherwise task prompt/description or placeholder
               let filePath = 'generated-code.js';
-              let codeContent = latestTask.agentOutput;
+              let codeContent = (latestTask.agentOutput || '').trim() ||
+                `// Task: ${latestTask.title || 'Untitled'}\n// No agent output generated.\n// Prompt: ${(latestTask.prompt || '').trim() || '(none)'}\n`;
               
               // Try to extract file path from code comments (e.g., "// file: src/index.js")
               const filePathMatch = codeContent.match(/\/\/\s*file:\s*([^\n]+)/i) || 
