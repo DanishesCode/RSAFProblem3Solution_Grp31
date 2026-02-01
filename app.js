@@ -9,8 +9,6 @@ const passport = require("passport");
 dotenv.config();
 const githubController = require("./controllers/githubController");
 const taskController = require("./controllers/taskController");
-const GeminiController = require('./controllers/geminiController');
-const OpenAIController = require('./controllers/openaiController');
 const OpenRouterController = require('./controllers/openrouterController');
 const boardController = require("./controllers/boardController");
 const chatController = require("./controllers/chatController");
@@ -87,14 +85,6 @@ app.put("/backlog/update", taskController.updateBacklog);
 app.put("/backlog/status-update", taskController.updateStatus);
 app.put("/backlog/update-agent-output", taskController.updateAgentOutput);
 app.delete("/backlog/delete", taskController.deleteBacklog);
-
-// Gemini
-app.post("/ai/gemini/generate", GeminiController.generateResponse);
-app.post("/ai/gemini/process-task", GeminiController.processTask);
-
-// OpenAI
-app.post("/ai/openai/generate", OpenAIController.generateResponse);
-app.post("/ai/openai/stream", OpenAIController.streamResponse);
 
 // OpenRouter (no streaming; one-shot only)
 app.post("/ai/openrouter/generate", OpenRouterController.generateResponse);

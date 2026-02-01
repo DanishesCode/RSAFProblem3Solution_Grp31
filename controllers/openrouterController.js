@@ -72,16 +72,6 @@ class OpenRouterController {
       // Save output to database using existing helper
       await taskModel.updateTaskAgentOutput(taskId, agentOutput);
 
-//websocket to board
-       const io = req.app.get("io");
-      if (io && task.boardId) {
-      io.to(`board:${task.boardId}`).emit("taskAgentOutputUpdated", {
-        taskId,
-        agentOutput,
-       });
-}
-
-
       res.json({
         success: true,
         agentOutput,
